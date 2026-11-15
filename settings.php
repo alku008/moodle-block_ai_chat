@@ -66,6 +66,35 @@ if ($hassiteconfig) {
             )
         );
 
+        // Lokal (15.11.2026): Wissensdateien der Personas und Dateien im Chat.
+        $settings->add(new admin_setting_heading('block_ai_chat/wissensdateienheading',
+            new lang_string('wissensdateienheading', 'block_ai_chat'), new lang_string('wissensdateienheadingdesc', 'block_ai_chat')));
+        $settings->add(new admin_setting_configtext('block_ai_chat/personamaxfiles',
+            new lang_string('personamaxfiles', 'block_ai_chat'), new lang_string('personamaxfilesdesc', 'block_ai_chat'), 5, PARAM_INT));
+        $settings->add(new admin_setting_configtext('block_ai_chat/personamaxbytes',
+            new lang_string('personamaxbytes', 'block_ai_chat'), '', 5, PARAM_INT));
+        $settings->add(
+            new admin_setting_configtext(
+                'block_ai_chat/embeddingmodel',
+                new lang_string('embeddingmodel', 'block_ai_chat'),
+                new lang_string('embeddingmodeldesc', 'block_ai_chat'),
+                'BAAI/bge-m3',
+                PARAM_TEXT
+            )
+        );
+        // Prüfen, ob das Embedding-Modell erreichbar ist (eine kurze Probe-Anfrage, nur auf dieser Einstellungsseite).
+        $probe = \block_ai_chat\local\wissen::embeddings(['Test']);
+        $settings->add(new admin_setting_description('block_ai_chat/embeddingstatus', '',
+            $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
+                : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
+        $settings->add(new admin_setting_configcheckbox('block_ai_chat/chatupload',
+            new lang_string('chatupload', 'block_ai_chat'), new lang_string('chatuploaddesc', 'block_ai_chat'), 1));
+        $settings->add(new admin_setting_configtext('block_ai_chat/chatuploadsperday',
+            new lang_string('chatuploadsperday', 'block_ai_chat'), new lang_string('chatuploadsperdaydesc', 'block_ai_chat'), 10, PARAM_INT));
+        $settings->add(new admin_setting_configtext('block_ai_chat/chatuploadmaxchars',
+            new lang_string('chatuploadmaxchars', 'block_ai_chat'), new lang_string('chatuploadmaxcharsdesc', 'block_ai_chat'),
+            20000, PARAM_INT));
+
         // Add text with link to management as setting.
         $settings->add(new admin_setting_description(
             'block_ai_chat/manageaicontext',

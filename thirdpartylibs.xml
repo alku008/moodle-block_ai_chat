@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>thirdparty/pdfparser</location>
+    <name>PdfParser</name>
+    <description>Lokal (15.11.2026): liest den Text aus PDF-Wissensdateien der Personas, ohne Programme auf dem Server.</description>
+    <version>2.13.1</version>
+    <license>LGPL</license>
+    <licenseversion>3.0</licenseversion>
+    <repository>https://github.com/smalot/pdfparser</repository>
+  </library>
+</libraries>

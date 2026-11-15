@@ -94,6 +94,9 @@ class block_ai_chat extends block_base {
         /** @var block_ai_chat\output\renderer $aioutput */
         $aioutput = $this->page->get_renderer('block_ai_chat');
         $this->content->text = $aioutput->render_ai_chat_content($this);
+        // Lokal (15.11.2026): Einstellungen für den 📎-Knopf (amd/src/anhang.js).
+        $this->page->requires->js_init_code('window.blockAiChatAnhang = '
+            . json_encode(\block_ai_chat\local\anhang::jsconfig()) . ';');
 
         if ($this->page->user_is_editing()) {
             return $this->content;

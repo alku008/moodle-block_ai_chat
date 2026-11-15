@@ -95,7 +95,7 @@ class get_all_conversations extends external_api {
                 $result[$record->itemid] = [
                     'conversationid' => $record->itemid,
                     'timecreated' => $record->timecreated,
-                    'title' => format_string($record->prompttext),
+                    'title' => format_string(\block_ai_chat\local\anhang::anzeige($record->prompttext)),
                 ];
             }
         }

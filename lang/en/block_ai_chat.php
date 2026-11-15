@@ -124,3 +124,22 @@ $string['typeuser'] = 'User persona';
 $string['userinfo'] = 'Info shown to users';
 $string['userpersonas'] = 'My personas';
 $string['yesterday'] = 'Yesterday';
+
+// Local extension (15.11.2026): knowledge files for personas.
+$string['embeddingmodel'] = 'Embedding model for persona knowledge files';
+$string['embeddingmodeldesc'] = 'Model name for /v1/embeddings of the Telli connector (AIS.chat API). Without a reachable embedding model, matching sections are found by word comparison.';
+$string['wissensdateien'] = 'Knowledge files';
+$string['wissensdateien_help'] = 'Up to 5 files (set by the administration) (txt, md, ipynb, py, html, csv, docx, pdf). For every question, only the sections that match best are sent to the AI together with the persona prompt. Do not upload solutions you do not want students to see.';
+$string['wissensdateienheading'] = 'Knowledge files and file attachments';
+$string['wissensdateienheadingdesc'] = 'Personas can carry knowledge files; matching sections are sent with each question. Users can attach a text file to a chat question.';
+$string['personamaxfiles'] = 'Knowledge files per persona';
+$string['personamaxfilesdesc'] = '0 = no knowledge files.';
+$string['personamaxbytes'] = 'Maximum size per knowledge file (MB)';
+$string['embeddingok'] = 'Embedding model reachable ({$a} dimensions).';
+$string['embeddingfehlt'] = 'Embedding model not reachable – knowledge files are searched by word comparison.';
+$string['chatupload'] = 'Allow file attachments in the chat';
+$string['chatuploaddesc'] = 'Users (including students) can attach a text file (txt, md, py, ipynb, csv, …) to a question.';
+$string['chatuploadsperday'] = 'Attachments per user and day';
+$string['chatuploadsperdaydesc'] = '0 = unlimited.';
+$string['chatuploadmaxchars'] = 'Maximum characters per attachment';
+$string['chatuploadmaxcharsdesc'] = 'Longer files are cut. About 4 characters correspond to one token.';

@@ -77,6 +77,13 @@ class persona_form extends dynamic_form {
         $mform->setType('prompt', PARAM_RAW);
         $mform->addHelpButton('prompt', 'personaprompt', 'block_ai_chat');
 
+        // Lokal (15.11.2026): Wissensdateien für die Persona (abschaltbar über personamaxfiles = 0).
+        if (\block_ai_chat\local\wissen::maxdateien() > 0) {
+        $mform->addElement('filemanager', 'wissensdateien', get_string('wissensdateien', 'block_ai_chat'), null,
+            \block_ai_chat\local\wissen::dateioptionen());
+        $mform->addHelpButton('wissensdateien', 'wissensdateien', 'block_ai_chat');
+        }
+
         $mform->addElement('textarea', 'userinfo', get_string('userinfo', 'block_ai_chat'));
         $mform->setType('userinfo', PARAM_TEXT);
 
@@ -176,7 +183,11 @@ class persona_form extends dynamic_form {
         $personadata->type = isset($formdata->type) ? $formdata->type : null;
 
         $manager = new manager($this->contextid, $this->component);
-        return $manager->edit_persona($personadata, $USER->id);
+        $ergebnis = $manager->edit_persona($personadata, $USER->id);
+        if (isset($formdata->wissensdateien)) {
+            \block_ai_chat\local\wissen::speichern((int)$formdata->personaid, (int)$formdata->wissensdateien);
+        }
+        return $ergebnis;
     }
 
     /**
@@ -196,6 +207,7 @@ class persona_form extends dynamic_form {
             'type' => $personarecord->type,
         ];
         $data['prompt'] = ['text' => $personarecord->prompt, 'format' => FORMAT_HTML];
+        $data['wissensdateien'] = \block_ai_chat\local\wissen::entwurf((int)$personarecord->id);
 
         $this->set_data($data);
     }

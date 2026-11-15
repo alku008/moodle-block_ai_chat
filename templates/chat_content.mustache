@@ -43,3 +43,9 @@
     </div>
     {{> block_ai_chat/components/userquota }}
 </div>
+{{#js}}
+    {{! Lokal (15.11.2026): 📎 Datei anhängen. }}
+    require(['block_ai_chat/anhang'], function(anhang) {
+        document.querySelectorAll('.block_ai_chat-input-wrapper').forEach(function(w) { anhang.init(w); });
+    });
+{{/js}}

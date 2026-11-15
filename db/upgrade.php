@@ -101,5 +101,25 @@ function xmldb_block_ai_chat_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026012200, 'ai_chat');
     }
 
+    if ($oldversion < 2026111500) {
+        // Lokal: Wissensdateien für Personas.
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('block_ai_chat_personachunks');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('personaid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('filename', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('chunkno', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('content', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('embedding', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('model', XMLDB_TYPE_CHAR, '255', null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('personaid', XMLDB_KEY_FOREIGN, ['personaid'], 'block_ai_chat_personas', ['id']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_block_savepoint(true, 2026111500, 'ai_chat');
+    }
+
     return true;
 }

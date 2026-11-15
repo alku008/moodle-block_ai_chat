@@ -153,6 +153,7 @@ class manager {
         $DB->delete_records('block_ai_chat_personas_selected', ['personasid' => $personaid]);
 
         $DB->delete_records('block_ai_chat_personas', ['id' => $personaid]);
+        \block_ai_chat\local\wissen::loeschen($personaid);
 
         $returnarray = [
             [
@@ -405,6 +406,10 @@ class manager {
         }
         $options['itemid'] = $conversationid;
         unset($options['conversationid']);
+        // Lokal (15.11.2026): Dateianhänge im Chat nach den Vorgaben der Administration prüfen.
+        if ($anhangfehler = \block_ai_chat\local\anhang::pruefen($prompt, (int)$USER->id)) {
+            return ['code' => 429, 'message' => $anhangfehler, 'debuginfo' => '', 'content' => []];
+        }
         $optionsrecords = options::get_options($this->context->id);
         $conversationlimit = 5;
         if ($optionsrecords && array_filter($optionsrecords, fn($record) => $record->name === 'historycontextmax') > 0) {
@@ -421,7 +426,9 @@ class manager {
                     [
                         [
                             'sender' => 'system',
-                            'message' => $currentpersona->prompt,
+                            // Lokal (15.11.2026): passende Auszüge aus den Wissensdateien der Persona anhängen.
+                            'message' => $currentpersona->prompt
+                                . \block_ai_chat\local\wissen::kontext((int)$currentpersona->id, $prompt),
                         ],
                     ],
                     $options['conversationcontext']
@@ -482,7 +489,7 @@ class manager {
                     'conversationid' => $logentry->itemid,
                     // FORMAT_PLAIN escapes the raw prompt and turns line breaks into <br> so multi-line
                     // input (e.g. pasted code) keeps its formatting when rendered unescaped in the template.
-                    'content' => format_text($logentry->prompttext, FORMAT_PLAIN),
+                    'content' => format_text(\block_ai_chat\local\anhang::anzeige($logentry->prompttext), FORMAT_PLAIN),
                     'sender' => 'user',
                     'messageMode' => 'chat',
                     'rendered' => false,
@@ -565,6 +572,7 @@ class manager {
         ];
 
         $personaobject->id = $DB->insert_record('block_ai_chat_personas', $personaobject);
+        \block_ai_chat\local\wissen::kopieren((int)$personaid, (int)$personaobject->id);
 
         $returnpersona = [
             'id' => $personaobject->id,

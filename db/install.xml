@@ -72,11 +72,11 @@
         <INDEX NAME="pagetype-aicontextid" UNIQUE="true" FIELDS="pagetype, aicontextid" COMMENT="Unique index for avoiding that there is a duplicate entry"/>
       </INDEXES>
     </TABLE>
-    <TABLE NAME="block_ai_chat_personachunks" COMMENT="Lokal: Abschnitte der Wissensdateien einer Persona mit Embedding">
+    <TABLE NAME="block_ai_chat_wissen" COMMENT="Lokal: Abschnitte der Wissensdateien (Kurs oder Persona) mit Embedding">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="personaid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Kurskontext bei Wissensdateien des Kurses, sonst 0"/>
+        <FIELD NAME="personaid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Persona (0 = Kurs-Wissensdatei)"/>
+        <FIELD NAME="contextid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Kurskontext (0 = Persona-Wissensdatei)"/>
         <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="chunkno" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
@@ -86,8 +86,10 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="personaid" TYPE="foreign" FIELDS="personaid" REFTABLE="block_ai_chat_personas" REFFIELDS="id"/>
       </KEYS>
+      <INDEXES>
+        <INDEX NAME="personaid-contextid" UNIQUE="false" FIELDS="personaid, contextid"/>
+      </INDEXES>
     </TABLE>
   </TABLES>
 </XMLDB>

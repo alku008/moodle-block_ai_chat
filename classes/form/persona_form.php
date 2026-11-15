@@ -77,11 +77,15 @@ class persona_form extends dynamic_form {
         $mform->setType('prompt', PARAM_RAW);
         $mform->addHelpButton('prompt', 'personaprompt', 'block_ai_chat');
 
-        // Lokal (15.11.2026): Wissensdateien für die Persona (abschaltbar über personamaxfiles = 0).
-        if (\block_ai_chat\local\wissen::maxdateien() > 0) {
-        $mform->addElement('filemanager', 'wissensdateien', get_string('wissensdateien', 'block_ai_chat'), null,
-            \block_ai_chat\local\wissen::dateioptionen());
-        $mform->addHelpButton('wissensdateien', 'wissensdateien', 'block_ai_chat');
+        // Lokal (15.11.2026): Wissensdateien der Persona – gelten in ALLEN Kursen, in denen die Persona gewählt ist
+        // (Dateien nur für einen Kurs: im KI-Kontrollzentrum des Kurses).
+        if (\block_ai_chat\local\wissen::personamaxdateien() > 0) {
+            $mform->addElement('html', '<div style="margin: 4px 0 8px 0; padding: 8px 12px; border-left: 4px solid #6d28d9; '
+                . 'background: #f5f3ff; border-radius: 6px; font-size: 0.9rem;">' . get_string('personawissenhinweis', 'block_ai_chat')
+                . '</div>');
+            $mform->addElement('filemanager', 'wissensdateien', get_string('personawissen', 'block_ai_chat'), null,
+                \block_ai_chat\local\wissen::personaoptionen());
+            $mform->addHelpButton('wissensdateien', 'personawissen', 'block_ai_chat');
         }
 
         $mform->addElement('textarea', 'userinfo', get_string('userinfo', 'block_ai_chat'));
@@ -185,7 +189,7 @@ class persona_form extends dynamic_form {
         $manager = new manager($this->contextid, $this->component);
         $ergebnis = $manager->edit_persona($personadata, $USER->id);
         if (isset($formdata->wissensdateien)) {
-            \block_ai_chat\local\wissen::speichern((int)$formdata->personaid, (int)$formdata->wissensdateien);
+            \block_ai_chat\local\wissen::persona_speichern((int)$formdata->personaid, (int)$formdata->wissensdateien);
         }
         return $ergebnis;
     }
@@ -207,7 +211,7 @@ class persona_form extends dynamic_form {
             'type' => $personarecord->type,
         ];
         $data['prompt'] = ['text' => $personarecord->prompt, 'format' => FORMAT_HTML];
-        $data['wissensdateien'] = \block_ai_chat\local\wissen::entwurf((int)$personarecord->id);
+        $data['wissensdateien'] = \block_ai_chat\local\wissen::persona_entwurf((int)$personarecord->id);
 
         $this->set_data($data);
     }

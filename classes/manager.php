@@ -153,7 +153,7 @@ class manager {
         $DB->delete_records('block_ai_chat_personas_selected', ['personasid' => $personaid]);
 
         $DB->delete_records('block_ai_chat_personas', ['id' => $personaid]);
-        \block_ai_chat\local\wissen::loeschen($personaid);
+        \block_ai_chat\local\wissen::persona_loeschen($personaid);
 
         $returnarray = [
             [
@@ -421,11 +421,11 @@ class manager {
         if ($mode === 'chat') {
             // Persona only makes sense in chat mode.
             $currentpersona = persona::get_current_persona($this->context->id);
-            // Lokal (15.11.2026): passende Auszüge aus den Wissensdateien der Persona und des Kurses anhängen.
+            // Lokal (15.11.2026): passende Auszüge aus den Wissensdateien der Persona (alle Kurse) und des Kurses (KI-Kontrollzentrum).
             $kurskontext = \local_ai_manager\ai_manager_utils::find_closest_parent_course_context($this->context);
             $wissen = \block_ai_chat\local\wissen::kontext(
-                empty($currentpersona) ? 0 : (int)$currentpersona->id,
                 $prompt,
+                empty($currentpersona) ? 0 : (int)$currentpersona->id,
                 $kurskontext ? (int)$kurskontext->id : 0
             );
             if (!empty($currentpersona) || $wissen !== '') {
@@ -577,7 +577,7 @@ class manager {
         ];
 
         $personaobject->id = $DB->insert_record('block_ai_chat_personas', $personaobject);
-        \block_ai_chat\local\wissen::kopieren((int)$personaid, (int)$personaobject->id);
+        \block_ai_chat\local\wissen::persona_kopieren((int)$personaid, (int)$personaobject->id);
 
         $returnpersona = [
             'id' => $personaobject->id,

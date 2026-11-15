@@ -101,15 +101,66 @@ class wissen {
     /** Alle Dateien der Persona in Abschnitte zerlegen und Embeddings berechnen. */
     public static function zerlegen(int $personaid): int {
         global $DB;
-        $DB->delete_records('block_ai_chat_personachunks', ['personaid' => $personaid]);
+        $DB->delete_records('block_ai_chat_personachunks', ['personaid' => $personaid, 'contextid' => 0]);
         $dateien = get_file_storage()->get_area_files(\context_system::instance()->id, 'block_ai_chat', self::FILEAREA, $personaid,
             'filename', false);
+        return self::speichere_abschnitte($dateien, $personaid, 0);
+    }
+
+    // ---- Wissensdateien pro Kurs (verwaltet über das KI-Kontrollzentrum, Seite kurswissen.php) ----
+
+    /** Dateibereich im Kurskontext (itemid 0). */
+    public const KURSAREA = 'kurswissen';
+
+    /** Höchstens so viele Dateien pro Kurs (Einstellung kursmaxfiles, Standard 5, 0 = aus). */
+    public static function kursmaxdateien(): int {
+        $wert = get_config('block_ai_chat', 'kursmaxfiles');
+        return $wert === false || $wert === '' ? 5 : max(0, (int)$wert);
+    }
+
+    public static function kursoptionen(): array {
+        return array_merge(self::dateioptionen(), ['maxfiles' => max(1, self::kursmaxdateien())]);
+    }
+
+    public static function kurs_entwurf(\context_course $kurs): int {
+        $draftitemid = 0;
+        file_prepare_draft_area($draftitemid, $kurs->id, 'block_ai_chat', self::KURSAREA, 0, self::kursoptionen());
+        return $draftitemid;
+    }
+
+    /** Speichern und neu zerlegen; gibt die Zahl der Abschnitte zurück (-1 = unverändert). */
+    public static function kurs_speichern(\context_course $kurs, int $draftitemid): int {
+        $vorher = self::kurs_fingerabdruck($kurs);
+        file_save_draft_area_files($draftitemid, $kurs->id, 'block_ai_chat', self::KURSAREA, 0, self::kursoptionen());
+        return self::kurs_fingerabdruck($kurs) !== $vorher ? self::kurs_zerlegen($kurs) : -1;
+    }
+
+    public static function kurs_dateinamen(\context_course $kurs): array {
+        $dateien = get_file_storage()->get_area_files($kurs->id, 'block_ai_chat', self::KURSAREA, 0, 'filename', false);
+        return array_values(array_map(fn($d) => $d->get_filename(), $dateien));
+    }
+
+    private static function kurs_fingerabdruck(\context_course $kurs): string {
+        $dateien = get_file_storage()->get_area_files($kurs->id, 'block_ai_chat', self::KURSAREA, 0, 'filename', false);
+        return implode('|', array_map(fn($d) => $d->get_filename() . ':' . $d->get_contenthash(), $dateien));
+    }
+
+    public static function kurs_zerlegen(\context_course $kurs): int {
+        global $DB;
+        $DB->delete_records('block_ai_chat_personachunks', ['personaid' => 0, 'contextid' => $kurs->id]);
+        $dateien = get_file_storage()->get_area_files($kurs->id, 'block_ai_chat', self::KURSAREA, 0, 'filename', false);
+        return self::speichere_abschnitte($dateien, 0, $kurs->id);
+    }
+
+    /** Dateien zerlegen, Embeddings berechnen, Abschnitte speichern (Persona: contextid 0; Kurs: personaid 0). */
+    private static function speichere_abschnitte(array $dateien, int $personaid, int $contextid): int {
+        global $DB;
         $abschnitte = [];
         foreach ($dateien as $datei) {
             $nr = 0;
             foreach (self::abschnitte(self::text($datei)) as $text) {
-                $abschnitte[] = (object)['personaid' => $personaid, 'filename' => $datei->get_filename(), 'chunkno' => $nr++,
-                    'content' => $text, 'embedding' => null, 'model' => '', 'timecreated' => time()];
+                $abschnitte[] = (object)['personaid' => $personaid, 'contextid' => $contextid, 'filename' => $datei->get_filename(),
+                    'chunkno' => $nr++, 'content' => $text, 'embedding' => null, 'model' => '', 'timecreated' => time()];
             }
         }
         if (!$abschnitte) {
@@ -275,9 +326,12 @@ class wissen {
     /**
      * Passende Auszüge zur Frage als Text für die Persona-Anweisung (leer, wenn die Persona keine Wissensdateien hat).
      */
-    public static function kontext(int $personaid, string $frage): string {
+    public static function kontext(int $personaid, string $frage, int $kurscontextid = 0): string {
         global $DB;
-        $abschnitte = $DB->get_records('block_ai_chat_personachunks', ['personaid' => $personaid], 'filename, chunkno');
+        // Abschnitte der Persona und (seit 15.11.2026) die Wissensdateien des Kurses.
+        $abschnitte = $DB->get_records_select('block_ai_chat_personachunks',
+            '(personaid > 0 AND personaid = ? AND contextid = 0) OR (personaid = 0 AND contextid > 0 AND contextid = ?)',
+            [$personaid, $kurscontextid], 'filename, chunkno');
         if (!$abschnitte) {
             return '';
         }

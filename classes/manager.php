@@ -421,14 +421,19 @@ class manager {
         if ($mode === 'chat') {
             // Persona only makes sense in chat mode.
             $currentpersona = persona::get_current_persona($this->context->id);
-            if (!empty($currentpersona)) {
+            // Lokal (15.11.2026): passende Auszüge aus den Wissensdateien der Persona und des Kurses anhängen.
+            $kurskontext = \local_ai_manager\ai_manager_utils::find_closest_parent_course_context($this->context);
+            $wissen = \block_ai_chat\local\wissen::kontext(
+                empty($currentpersona) ? 0 : (int)$currentpersona->id,
+                $prompt,
+                $kurskontext ? (int)$kurskontext->id : 0
+            );
+            if (!empty($currentpersona) || $wissen !== '') {
                 $options['conversationcontext'] = array_merge(
                     [
                         [
                             'sender' => 'system',
-                            // Lokal (15.11.2026): passende Auszüge aus den Wissensdateien der Persona anhängen.
-                            'message' => $currentpersona->prompt
-                                . \block_ai_chat\local\wissen::kontext((int)$currentpersona->id, $prompt),
+                            'message' => (empty($currentpersona) ? '' : $currentpersona->prompt) . $wissen,
                         ],
                     ],
                     $options['conversationcontext']

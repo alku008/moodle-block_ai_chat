@@ -5,7 +5,8 @@
   bottom: 4.5rem;
   right: 2rem;
   transition: 0.2s;
-  z-index: 1000;
+  /* Lokal (15.11.2026): über der Seitenleiste (Drawer 1015, unter 992 px 1035), unter Dialogen (ab 1050). Vorher 1000. */
+  z-index: 1045;
   display: flex;
   justify-content: center;
   align-items: center;

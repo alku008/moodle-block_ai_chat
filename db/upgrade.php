@@ -121,5 +121,15 @@ function xmldb_block_ai_chat_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026111500, 'ai_chat');
     }
 
+    if ($oldversion < 2026111502) {
+        // Lokal: Wissensdateien pro Kurs (Abschnitte mit personaid 0 und dem Kurskontext).
+        $table = new xmldb_table('block_ai_chat_personachunks');
+        $field = new xmldb_field('contextid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'personaid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_block_savepoint(true, 2026111502, 'ai_chat');
+    }
+
     return true;
 }

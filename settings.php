@@ -71,6 +71,8 @@ if ($hassiteconfig) {
             new lang_string('wissensdateienheading', 'block_ai_chat'), new lang_string('wissensdateienheadingdesc', 'block_ai_chat')));
         $settings->add(new admin_setting_configtext('block_ai_chat/personamaxfiles',
             new lang_string('personamaxfiles', 'block_ai_chat'), new lang_string('personamaxfilesdesc', 'block_ai_chat'), 5, PARAM_INT));
+        $settings->add(new admin_setting_configtext('block_ai_chat/kursmaxfiles',
+            new lang_string('kursmaxfiles', 'block_ai_chat'), new lang_string('kursmaxfilesdesc', 'block_ai_chat'), 5, PARAM_INT));
         $settings->add(new admin_setting_configtext('block_ai_chat/personamaxbytes',
             new lang_string('personamaxbytes', 'block_ai_chat'), '', 5, PARAM_INT));
         $settings->add(

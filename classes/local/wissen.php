@@ -261,29 +261,58 @@ class wissen {
         $absaetze = preg_split("/\n\s*\n/", $text);
         $ergebnis = [];
         $aktuell = '';
-        $ueberschrift = '';
+        $oben = '';          // oberste Ebene: Hauptüberschrift mit „Lernpfad/Kapitel/Modul/Thema/Teil N“ (bleibt bis zur nächsten solchen).
+        $haupt = '';         // letzte Hauptüberschrift (# …), z. B. „# Listen in Python“ – beide stehen über jedem Abschnitt.
+        $ueberschrift = '';  // letzte Überschrift beliebiger Ebene (für „(Fortsetzung)“).
+        $imcode = false;     // Kommentare in Code-Blöcken („# a) …“) sind keine Überschriften.
+        $beginn = function () use (&$oben, &$haupt, &$aktuell): void {
+            $teile = array_unique(array_filter([trim(ltrim($oben, '#')), trim(ltrim($haupt, '#'))]));
+            $aktuell = $teile ? '[' . implode(' › ', $teile) . "]\n\n" : '';
+        };
+        $beginn();
         foreach ($absaetze as $absatz) {
             $absatz = trim($absatz);
             if ($absatz === '') {
                 continue;
             }
-            if (preg_match('/^#{1,6}\s/', $absatz)) {
+            if (!$imcode && preg_match('/^(#{1,6})\s/', $absatz, $m)) {
                 $ueberschrift = strtok($absatz, "\n");
+                if (strlen($m[1]) === 1 && $ueberschrift !== $haupt) {
+                    // Neuer Hauptteil: laufenden Abschnitt abschließen.
+                    if (trim(preg_replace('/^\[[^\]]*\]/', '', $aktuell)) !== '') {
+                        $ergebnis[] = $aktuell;
+                    }
+                    if (preg_match('/^#\s+(Lernpfad|Kapitel|Modul|Thema|Teil|Unit)\s+\d+/iu', $ueberschrift)) {
+                        $oben = preg_replace('/\s+[–-]\s+.*$/u', '', $ueberschrift);   // „Lernpfad 8: Dictionaries – Worum“ → „Lernpfad 8: Dictionaries“
+                        $haupt = $ueberschrift;
+                    } else {
+                        $haupt = $ueberschrift;
+                    }
+                    $beginn();
+                }
+            }
+            if (substr_count($absatz, '```') % 2 === 1) {
+                $imcode = !$imcode;
             }
             // Sehr lange Absätze hart teilen.
             foreach (str_split($absatz, self::ABSCHNITT * 2) as $stueck) {
-                if ($aktuell !== '' && \core_text::strlen($aktuell) + \core_text::strlen($stueck) > self::ABSCHNITT) {
+                $leer = trim(preg_replace('/^\[[^\]]*\]/', '', $aktuell)) === '';
+                if (!$leer && \core_text::strlen($aktuell) + \core_text::strlen($stueck) > self::ABSCHNITT) {
                     $ergebnis[] = $aktuell;
-                    $aktuell = ($ueberschrift !== '' && strpos($stueck, $ueberschrift) !== 0) ? $ueberschrift . " (Fortsetzung)\n\n" : '';
+                    $beginn();
+                    if ($ueberschrift !== '' && $ueberschrift !== $haupt && strpos($stueck, $ueberschrift) !== 0) {
+                        $aktuell .= $ueberschrift . " (Fortsetzung)\n\n";
+                    }
                 }
-                $aktuell .= ($aktuell === '' || substr($aktuell, -2) === "\n\n" ? '' : "\n\n") . $stueck;
+                $aktuell .= (substr($aktuell, -2) === "\n\n" || $aktuell === '' ? '' : "\n\n") . $stueck;
             }
         }
-        if (trim($aktuell) !== '') {
+        if (trim(preg_replace('/^\[[^\]]*\]/', '', $aktuell)) !== '') {
             $ergebnis[] = $aktuell;
         }
         return $ergebnis;
     }
+
 
     /** Name des Embedding-Modells bei AIS.chat. */
     public static function modell(): string {
@@ -334,7 +363,9 @@ class wissen {
         foreach ($abschnitte as $id => $a) {
             // Gemischte Suche: Bedeutung (Embedding) + Wortvergleich + Bonus, wenn eine genannte Aufgabe genau getroffen ist.
             $text = $a->filename . ' ' . $a->content;
-            $wort = self::wortpunkte($frage, $text) + self::aufgabenbonus($frage, $a->content);
+            $titel = preg_match('/^\[([^\]]*)\]/u', $a->content, $tm) ? $tm[1] : '';
+            $wort = self::wortpunkte($frage, $text) + self::aufgabenbonus($frage, $a->content)
+                + self::titelbonus($frage, $titel);   // Thema der Frage im Lernpfad-/Notebook-Titel
             if ($fragevektor && !empty($a->embedding)) {
                 $punkte[$id] = self::kosinus($fragevektor, json_decode($a->embedding, true)) + 0.3 * $wort;
             } else {
@@ -373,14 +404,50 @@ class wissen {
         return ($na && $nb) ? $skalar / sqrt($na * $nb) : 0.0;
     }
 
-    /** Bonus, wenn die Frage „Aufgabe 3“ o. Ä. nennt und der Abschnitt genau diese Aufgabe enthält (Embeddings erkennen Nummern schlecht). */
+    /**
+     * Bonus, wenn die Frage „Aufgabe 3“ o. Ä. nennt (Embeddings erkennen Nummern schlecht): 1,5, wenn der Abschnitt mit genau dieser
+     * Aufgabe beginnt (Überschrift), 0,5, wenn sie nur irgendwo darin vorkommt.
+     */
     private static function aufgabenbonus(string $frage, string $text): float {
         if (!preg_match_all('/\b(aufgabe|teil|schritt|stufe|lernpfad)\s*(\d+[a-z]?)\b/iu', $frage, $m, PREG_SET_ORDER)) {
             return 0.0;
         }
+        $rumpf = preg_replace('/^\[[^\]]*\]\s*/u', '', $text);
+        $kopf = strtok($rumpf, "\n");
+        $bonus = 0.0;
         foreach ($m as $x) {
-            if (preg_match('/' . preg_quote($x[1], '/') . '\s*' . preg_quote($x[2], '/') . '\b/iu', $text)) {
-                return 1.0;
+            $muster = '/' . preg_quote($x[1], '/') . '\s*' . preg_quote($x[2], '/') . '\b/iu';
+            if (preg_match('/^#/', (string)$kopf) && preg_match($muster, (string)$kopf)) {
+                $bonus = max($bonus, 1.5);
+            } else if (preg_match($muster, $rumpf)) {
+                $bonus = max($bonus, 0.5);
+            }
+        }
+        return $bonus;
+    }
+
+
+    /** Füllwörter, die im Titelvergleich nicht zählen. */
+    private const FUELLWOERTER = ['aufgabe', 'notebook', 'nicht', 'weiter', 'komme', 'hilfe', 'helfen', 'bitte', 'warum', 'wieso',
+        'weshalb', 'kannst', 'könnte', 'habe', 'meine', 'meinem', 'meiner', 'diese', 'dieser', 'dieses', 'dass', 'wird', 'sind', 'eine',
+        'einen', 'einer', 'beim', 'immer', 'schon', 'noch', 'erklär', 'erkläre', 'verstehe', 'funktioniert', 'lernpfad', 'datei', 'finde', 'finden', 'gibt', 'geht', 'mache', 'machen'];
+
+    /** 0,6, wenn ein Inhaltswort der Frage (Wortanfang, ab 4 Buchstaben) im Titel des Abschnitts steht („Listen“ ~ „Liste“). */
+    private static function titelbonus(string $frage, string $titel): float {
+        if ($titel === '') {
+            return 0.0;
+        }
+        $teile = fn($t) => array_filter(preg_split('/[^\p{L}\p{N}]+/u', \core_text::strtolower($t)), fn($w) => \core_text::strlen($w) >= 4);
+        $titelwoerter = $teile($titel);
+        foreach ($teile($frage) as $w) {
+            if (in_array($w, self::FUELLWOERTER)) {
+                continue;
+            }
+            $stamm = \core_text::substr($w, 0, 5);
+            foreach ($titelwoerter as $t) {
+                if (strpos($t, $stamm) === 0) {
+                    return 0.6;
+                }
             }
         }
         return 0.0;

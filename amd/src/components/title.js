@@ -77,6 +77,37 @@ class Title extends BaseComponent {
         const title = persona ? stripHtmlTags(persona.name) : this.defaultTitle;
         this.getElement(this.selectors.TITLE).innerText = title;
         this.getElement(this.selectors.TITLE).title = title;
+        this._fitTitle();
+    }
+
+    /**
+     * Schriftgröße so wählen, dass der Titel die Breite ausnutzt (1,3 rem bis 0,95 rem in einer Zeile, sonst zweizeilig).
+     * Ein ResizeObserver passt sie an, wenn das Fenster seine Größe ändert (Fenster, Vollbild, angedockt).
+     */
+    _fitTitle() {
+        const el = this.getElement(this.selectors.TITLE);
+        if (!this.resizeObserver && window.ResizeObserver) {
+            this.resizeObserver = new ResizeObserver(() => this._fitTitle());
+            this.resizeObserver.observe(el.parentElement);
+        }
+        if (el.clientWidth === 0) {
+            return;
+        }
+        el.style.display = 'block';
+        el.style.whiteSpace = 'nowrap';
+        el.style.webkitLineClamp = '';
+        let size = 1.3;
+        el.style.fontSize = size + 'rem';
+        while (el.scrollWidth > el.clientWidth && size > 0.95) {
+            size = Math.round((size - 0.05) * 100) / 100;
+            el.style.fontSize = size + 'rem';
+        }
+        if (el.scrollWidth > el.clientWidth) {
+            el.style.whiteSpace = 'normal';
+            el.style.display = '-webkit-box';
+            el.style.webkitBoxOrient = 'vertical';
+            el.style.webkitLineClamp = '2';
+        }
     }
 
     async _updateTitle({element}) {

@@ -34,9 +34,9 @@ along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 
 {{! This template is overwriting the title region of the modal, so we have to take care of the bootstrap modal attributes. }}
-<div class="modal-title" data-id="title-{{uniqid}}" data-block_ai_chat-component="title" data-region="title">
-    {{! Lokal (16.11.2026): kleinere, farbige Überschrift, darf zweizeilig sein (Persona-Namen wurden abgeschnitten). }}
-    <h5 class="block_ai_chat_title" data-block_ai_chat-element="titleheading" style="font-size: 1.02rem; font-weight: 600; color: #5b21b6; line-height: 1.25; margin: 0; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;">
+<div class="modal-title" data-id="title-{{uniqid}}" data-block_ai_chat-component="title" data-region="title" style="flex: 1 1 auto; min-width: 0;">
+    {{! Lokal (16.11.2026): Überschrift in der Kachelfarbe des Kurses (Tiles: --format-tiles-colour, sonst Lila); title.js passt die Schriftgröße an die Breite an (sonst zweizeilig). }}
+    <h5 class="block_ai_chat_title" data-block_ai_chat-element="titleheading" style="font-size: 1.25rem; font-weight: 600; color: var(--format-tiles-colour, #5b21b6); line-height: 1.25; margin: 0; white-space: nowrap; overflow: hidden;">
         {{! Just a fallback string, so mustache lint is content, will be set by JS.}}
         {{#str}}pluginname, block_ai_chat{{/str}}
     </h5>

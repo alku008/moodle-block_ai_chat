@@ -77,9 +77,9 @@ define([], function() {
         knopf.setAttribute('aria-label', 'Datei anhängen');
         knopf.textContent = '📎';
         // Wie das KI-Werkzeug-Symbol links: absolut im Eingabefeld, hier links neben dem Senden-Knopf.
-        knopf.style.cssText = 'position: absolute; right: 4.1rem; bottom: 0.65rem; z-index: 2; font-size: 1.3rem; line-height: 1; '
+        knopf.style.cssText = 'position: absolute; right: 4.7rem; bottom: 0.65rem; z-index: 2; font-size: 1.3rem; line-height: 1; '
             + 'padding: 6px; background: none; border: none; cursor: pointer;';
-        textfeld.style.paddingRight = '6.6rem';
+        textfeld.style.paddingRight = '7.2rem';
 
         var marke = document.createElement('div');
         marke.style.cssText = 'display: none; margin: 0 0 4px 0; padding: 3px 8px; border-radius: 12px; background: #ede9fe; '

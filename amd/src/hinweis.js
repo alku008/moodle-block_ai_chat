@@ -102,11 +102,12 @@ define(['local_ai_manager/infobox', 'local_ai_manager/warningbox'], function(Inf
             var zeile = document.createElement('div');
             zeile.className = 'kichat-ki-zeile';
             zeile.style.cssText = 'font-size: 0.72rem; color: #6a737d; text-align: center; margin: 4px 0 2px 0; line-height: 1.3;';
-            zeile.appendChild(document.createTextNode('KI kann Fehler machen – Antworten prüfen, keine persönlichen Daten. '));
+            zeile.appendChild(document.createTextNode('KI kann Fehler machen – Antworten prüfen, keine persönlichen Daten.'));
+            zeile.appendChild(document.createElement('br'));
             var link = document.createElement('a');
             link.href = '#';
             link.textContent = 'ⓘ Hinweise';
-            link.style.cssText = 'color: #6a737d; text-decoration: underline; white-space: nowrap;';
+            link.style.cssText = 'display: inline-block; margin-top: 1px; color: #6a737d; text-decoration: underline; white-space: nowrap;';
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 zeigeHinweis(rahmen);

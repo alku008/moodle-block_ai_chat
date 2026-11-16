@@ -48,4 +48,8 @@
     require(['block_ai_chat/anhang'], function(anhang) {
         document.querySelectorAll('.block_ai_chat-input-wrapper').forEach(function(w) { anhang.init(w); });
     });
+    {{! Lokal (16.11.2026): KI-Hinweise klein unter der Eingabe, ausführlich beim ersten Öffnen. }}
+    require(['block_ai_chat/hinweis'], function(hinweis) {
+        document.querySelectorAll('.block_ai_chat-input-wrapper').forEach(function(w) { hinweis.init(w); });
+    });
 {{/js}}

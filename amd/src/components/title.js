@@ -16,13 +16,17 @@
 import {BaseComponent} from 'core/reactive';
 import {getString} from 'core/str';
 import {stripHtmlTags} from 'block_ai_chat/utils';
+import {MODES} from 'block_ai_chat/constants';
 
 /**
  * Component representing a message in the ai_chat.
  */
 class Title extends BaseComponent {
 
-    newDialogString = null;
+    // Lokal (16.11.2026, Wunsch der Nutzerin): In der Kopfzeile steht im Chat der Name der gewählten Persona (sonst „KI-Chat“),
+    // nicht mehr die erste Frage der Unterhaltung – die wurde abgeschnitten und war wenig hilfreich. Die Kurzbeschreibung der
+    // Persona steht darunter im Chatfenster (components/boxes.js).
+    defaultTitle = null;
 
     /**
      * Function to initialize component, called by mustache template.
@@ -44,16 +48,9 @@ class Title extends BaseComponent {
         };
     }
 
-    async stateReady(state) {
-        this.getElement(this.selectors.TITLE).innerText = '';
-        this.newDialogString = await getString('newdialog', 'block_ai_chat');
-        // Probably not necessary, because messages are loaded after the title component is ready,
-        // so the watcher on messages:created will overwrite this default.
-        // We keep it to make sure to have a title in case this changes.
-        const title = state.messages.size > 0
-            ? stripHtmlTags(state.messages.values().next().value.content)
-            : this.newDialogString;
-        this.getElement(this.selectors.TITLE).innerText = title;
+    async stateReady() {
+        this.defaultTitle = await getString('pluginname', 'block_ai_chat');
+        this._showChatTitle();
     }
 
     /**
@@ -62,38 +59,33 @@ class Title extends BaseComponent {
      */
     getWatchers() {
         return [
-            {watch: `messages:created`, handler: this._updateTitleChat},
-            {watch: `messages:deleted`, handler: this._updateTitleChat},
             {watch: `config.view:updated`, handler: this._updateTitle},
+            {watch: `config.currentPersona:updated`, handler: this._showChatTitle},
+            {watch: `config.mode:updated`, handler: this._showChatTitle},
+            {watch: `personas:updated`, handler: this._showChatTitle},
+            {watch: `personas:deleted`, handler: this._showChatTitle},
         ];
     }
 
-
-    _updateTitleChat({element}) {
-        if (this.reactive.state.config.view !== 'chat') {
+    _showChatTitle() {
+        const state = this.reactive.state;
+        if (state.config.view !== 'chat' || this.defaultTitle === null) {
             return;
         }
-        if (this.reactive.state.messages.size === 0) {
-            this.getElement(this.selectors.TITLE).innerText = this.newDialogString;
-            return;
-        }
-        if (this.reactive.state.messages.values().next().value.id !== element.id) {
-            return;
-        }
-        // We need innerHTML here so HTML characters are interpreted properly.
-        // We need to strip tags however.
-        this.getElement(this.selectors.TITLE).innerHTML = stripHtmlTags(element.content);
+        const personaId = parseInt(state.config.currentPersona);
+        const persona = personaId !== 0 && state.config.mode !== MODES.AGENT ? state.personas.get(personaId) : null;
+        const title = persona ? stripHtmlTags(persona.name) : this.defaultTitle;
+        this.getElement(this.selectors.TITLE).innerText = title;
+        this.getElement(this.selectors.TITLE).title = title;
     }
 
     async _updateTitle({element}) {
         if (element.view === 'history') {
-            const historyString = await getString('history', 'block_ai_chat');
-            this.getElement(this.selectors.TITLE).innerText = historyString;
+            this.getElement(this.selectors.TITLE).innerText = await getString('history', 'block_ai_chat');
         } else if (element.view === 'personalist') {
-            const personalistString = await getString('managepersona', 'block_ai_chat');
-            this.getElement(this.selectors.TITLE).innerText = personalistString;
+            this.getElement(this.selectors.TITLE).innerText = await getString('managepersona', 'block_ai_chat');
         } else if (element.view === 'chat') {
-            this._updateTitleChat({element});
+            this._showChatTitle();
         }
     }
 }

@@ -31,7 +31,8 @@
             {{! This is populated dynamically with JS. }}
         </button>
     {{/showAgentMode}}
-    <div class="block_ai_chat-personabanner badge rounded-pill bg-info text-truncate cursor-pointer" data-block_ai_chat-element="personabanner"{{!
+    {{! Lokal (16.11.2026): Persona-Plakette ausgeblendet – der Name steht als Titel, die Beschreibung im Chatfenster. }}
+    <div class="block_ai_chat-personabanner badge rounded-pill bg-info text-truncate cursor-pointer" style="display: none !important;" data-block_ai_chat-element="personabanner"{{!
          }} title="{{#str}}personabannerinfo, block_ai_chat{{/str}}">
         {{! This is populated dynamically with JS. }}
     </div>

@@ -33,9 +33,9 @@ Example context (json):
 }
 }}
 
-<div data-block_ai_chat-component="boxes" data-id="boxes-{{uniqid}}" class="infobox mt-2">
-    <div data-block_ai_chat-element="ai_manager-infobox" class="mw-100"></div>
-    <div data-block_ai_chat-element="ai_manager-warningbox" class="mw-100 block_ai_chat-ai-warning"></div>
+<div data-block_ai_chat-component="boxes" data-id="boxes-{{uniqid}}" class="mt-1">
+    {{! Lokal (16.11.2026): nur die Kurzbeschreibung der Persona; KI-Hinweise siehe amd/src/hinweis.js. }}
+    <div data-block_ai_chat-element="personadescription" class="d-none" style="font-size: 0.85rem; color: #5b6670; line-height: 1.35; padding: 2px 0 4px 0;"></div>
 </div>
 {{#js}}
     require(['block_ai_chat/components/boxes'], function(component) {

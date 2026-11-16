@@ -14,13 +14,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 import {BaseComponent} from 'core/reactive';
-import {renderInfoBox} from 'local_ai_manager/infobox';
-import {renderWarningBox} from 'local_ai_manager/warningbox';
-import {events} from 'local_ai_manager/events';
-import {debounce} from 'core/utils';
+import {MODES} from 'block_ai_chat/constants';
 
 /**
- * Component representing a message in the ai_chat.
+ * Lokal (16.11.2026, Wunsch der Nutzerin): Unter der Kopfzeile steht nur noch die Kurzbeschreibung der gewählten Persona.
+ * Die KI-Hinweise (Infobox und Warnhinweis des AI Managers) zeigt amd/src/hinweis.js: ausführlich beim ersten Öffnen zum
+ * Wegklicken und als kleine Zeile unter dem Eingabefeld.
  */
 class Boxes extends BaseComponent {
 
@@ -38,64 +37,38 @@ class Boxes extends BaseComponent {
     }
 
     create() {
-        this.name = 'userquota';
+        this.name = 'boxes';
         this.selectors = {
-            INFOBOX: `[data-block_ai_chat-element='ai_manager-infobox']`,
-            WARNINGBOX: `[data-block_ai_chat-element='ai_manager-warningbox']`,
-            // CARE: This is outside of this component's root element.
-            MODAL_CONTENT: `.modal-content`,
-            // CARE: This is outside of this component's root element.
-            OUTPUT_WRAPPER: `[data-block_ai_chat-element='outputwrapper']`,
+            PERSONADESCRIPTION: `[data-block_ai_chat-element='personadescription']`,
         };
-        this._debouncedCollapseBoxes = debounce(this._collapseBoxes.bind(this), 250);
     }
 
     getWatchers() {
         return [
-            {watch: `config.view:updated`, handler: this._showOrHideBoxes},
-            {watch: `messages.rendered:updated`, handler: this._debouncedCollapseBoxes},
-            {watch: `messages:deleted`, handler: this._debouncedCollapseBoxes},
+            {watch: `config.view:updated`, handler: this._showPersonaDescription},
+            {watch: `config.currentPersona:updated`, handler: this._showPersonaDescription},
+            {watch: `config.mode:updated`, handler: this._showPersonaDescription},
+            {watch: `personas:updated`, handler: this._showPersonaDescription},
+            {watch: `personas:deleted`, handler: this._showPersonaDescription},
         ];
     }
 
-    async stateReady() {
-        await this._renderBoxes();
+    stateReady() {
+        this._showPersonaDescription();
     }
 
-    async _renderBoxes() {
-        await renderInfoBox(
-            'block_ai_chat',
-            this.reactive.state.config.userid,
-            this.getElement(this.selectors.INFOBOX),
-            ['chat']
-        );
-        // Show AI info warning.
-        await renderWarningBox(this.getElement(this.selectors.WARNINGBOX));
-    }
-
-    _showOrHideBoxes() {
-        if (this.reactive.state.config.view === 'chat') {
-            this.getElement(this.selectors.INFOBOX).classList.remove('d-none');
-            this.getElement(this.selectors.WARNINGBOX).classList.remove('d-none');
-        } else {
-            this.getElement(this.selectors.INFOBOX).classList.add('d-none');
-            this.getElement(this.selectors.WARNINGBOX).classList.add('d-none');
+    _showPersonaDescription() {
+        const state = this.reactive.state;
+        const target = this.getElement(this.selectors.PERSONADESCRIPTION);
+        const personaId = parseInt(state.config.currentPersona);
+        const persona = personaId !== 0 && state.config.mode !== MODES.AGENT ? state.personas.get(personaId) : null;
+        if (state.config.view !== 'chat' || !persona || !persona.userinfo) {
+            target.classList.add('d-none');
+            return;
         }
-    }
-
-    _collapseBoxes() {
-        const chatOutputWrapper = this.getElement().closest(this.selectors.MODAL_CONTENT)
-            .querySelector(this.selectors.OUTPUT_WRAPPER);
-        const hasVisibleScrollbar = chatOutputWrapper.scrollHeight > chatOutputWrapper.clientHeight;
-        const infoboxTargetElement = this.getElement(this.selectors.INFOBOX);
-        const warningboxTargetElement = this.getElement(this.selectors.WARNINGBOX);
-        if (hasVisibleScrollbar) {
-            infoboxTargetElement.dispatchEvent(new CustomEvent(events.collapseInfoBox));
-            warningboxTargetElement.dispatchEvent(new CustomEvent(events.collapseWarningBox));
-        } else {
-            infoboxTargetElement.dispatchEvent(new CustomEvent(events.maximizeInfoBox));
-            warningboxTargetElement.dispatchEvent(new CustomEvent(events.maximizeWarningBox));
-        }
+        // Die Beschreibung kann <br /> enthalten (Formular-Text); nur als reinen Text anzeigen.
+        target.textContent = persona.userinfo.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        target.classList.remove('d-none');
     }
 }
 

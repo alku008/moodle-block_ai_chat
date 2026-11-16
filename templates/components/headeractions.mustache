@@ -30,7 +30,7 @@
 <div class="headeractions" data-block_ai_chat-element="headeractions" data-id="headeractions-{{uniqid}}">
     {{> block_ai_chat/state_header }}
     <div class="dropdown block_ai_chat_action_menu">
-        <button class="btn btn-icon icon-no-margin p-0 ms-2" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis"></i></button>
+        <button class="btn btn-icon icon-no-margin p-0 ms-2" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false" title="{{#str}} actionsmenu, core {{/str}}" aria-label="{{#str}} actionsmenu, core {{/str}}" style="font-size: 1.15rem;">{{! Lokal (16.11.2026): senkrechte Punkte wie Moodles Aktionsmenüs (vorher fa-ellipsis, wurde übersehen). }}<i class="fa fa-ellipsis-vertical"></i></button>
         <div class="dropdown-menu dropdown-menu-right">
             <a class="dropdown-item" href="#" data-block_ai_chat-element="newconversationbutton">{{#pix}} t/messages, core, {{#str}} newdialog, block_ai_chat {{/str}} {{/pix}}{{#str}} newdialog, block_ai_chat {{/str}}</a>
             <a class="dropdown-item" href="#" data-block_ai_chat-element="showhistorybutton">{{#pix}} t/reload, core, {{#str}} showhistory, block_ai_chat {{/str}} {{/pix}}{{#str}} history, block_ai_chat {{/str}}</a>

@@ -184,7 +184,8 @@ body:not(.block_ai_chat_replacehelp).hasstickyfooter #ai_chat_button {
   top: 0.75rem;
   left: 0.6rem;
 }
-.block_ai_chat_modal .block_ai_chat-input textarea {
+.block_ai_chat_modal .block_ai_chat-input textarea,
+.block_ai_chat_modal .block_ai_chat-input textarea:disabled {
   height: inherit;
   padding: 1rem 4.1rem 1rem 2.5rem;
   resize: none;
@@ -530,4 +531,15 @@ body.block_ai_chat_replacehelp.block_ai_chat_chatwindow .block_ai_chat_modal:not
 }
 .block_ai_chat-history-marker .badge {
   cursor: help;
+}
+
+/* Lokal (16.11.2026, Wunsch der Nutzerin): Rahmen des Eingabefelds in hellerer Kachelfarbe des Kurses (format_tiles setzt
+   --format-tiles-colour-5 = 50 % Deckkraft), beim Schreiben kräftiger. Ohne Kachelformat bleibt Moodles Grau. */
+.block_ai_chat_modal .block_ai_chat-input textarea,
+.block_ai_chat_modal .block_ai_chat-input textarea:disabled {
+    border: 2px solid var(--format-tiles-colour-5, #8f959e) !important;
+}
+.block_ai_chat_modal .block_ai_chat-input textarea:focus {
+    border-color: var(--format-tiles-colour, #0f6cbf) !important;
+    box-shadow: 0 0 0 0.2rem var(--format-tiles-colour-1, rgba(15, 108, 191, 0.25));
 }

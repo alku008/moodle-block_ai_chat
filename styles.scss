@@ -653,3 +653,12 @@ body.block_ai_chat_replacehelp {
         cursor: help;
     }
 }
+
+// Lokal (16.11.2026): Rahmen des Eingabefelds in hellerer Kachelfarbe (siehe styles.css).
+.block_ai_chat_modal .block_ai_chat-input textarea {
+    border: 2px solid var(--format-tiles-colour-5, #8f959e);
+    &:focus {
+        border-color: var(--format-tiles-colour, #0f6cbf);
+        box-shadow: 0 0 0 0.2rem var(--format-tiles-colour-1, rgba(15, 108, 191, 0.25));
+    }
+}

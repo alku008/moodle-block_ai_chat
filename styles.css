@@ -543,3 +543,24 @@ body.block_ai_chat_replacehelp.block_ai_chat_chatwindow .block_ai_chat_modal:not
     border-color: var(--format-tiles-colour, #0f6cbf) !important;
     box-shadow: 0 0 0 0.2rem var(--format-tiles-colour-1, rgba(15, 108, 191, 0.25));
 }
+
+/* Lokal (16.11.2026, Wunsch der Nutzerin): Im Chatfenster alles, was sonst Moodles Blau hat (Links, Symbole zum Bearbeiten/Kopieren/
+   Löschen, Verlauf, ausgewählte Persona), in der Kachelfarbe des Kurses. format_tiles liefert die Farbe auch als „r,g,b“
+   (--format-tiles-colour-elems); ohne Kachelformat bleibt Moodles Blau. */
+.block_ai_chat_modal,
+.block_ai_chat_modal .modal-content {
+    --bs-primary: var(--format-tiles-colour, #0f6cbf);
+    --bs-primary-rgb: var(--format-tiles-colour-elems, 15, 108, 191);
+    --bs-link-color: var(--format-tiles-colour, #0f6cbf);
+    --bs-link-color-rgb: var(--format-tiles-colour-elems, 15, 108, 191);
+    --bs-link-hover-color: var(--format-tiles-colour, #0c5699);
+    --bs-link-hover-color-rgb: var(--format-tiles-colour-elems, 12, 86, 153);
+    --bs-primary-bg-subtle: var(--format-tiles-colour-1, #cfe2f2);
+    --bs-primary-border-subtle: var(--format-tiles-colour-5, #9fc4e5);
+    --bs-primary-text-emphasis: var(--format-tiles-colour, #06304c);
+}
+.block_ai_chat_modal a:not(.btn),
+.block_ai_chat_modal a:not(.btn) .icon,
+.block_ai_chat_modal a:not(.btn) i {
+    color: var(--format-tiles-colour, #0f6cbf);
+}

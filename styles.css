@@ -564,3 +564,20 @@ body.block_ai_chat_replacehelp.block_ai_chat_chatwindow .block_ai_chat_modal:not
 .block_ai_chat_modal a:not(.btn) i {
     color: var(--format-tiles-colour, #0f6cbf);
 }
+
+/* Lokal (16.11.2026, Wunsch der Nutzerin): Kopier-Symbol über der Nachricht statt im Text; kleine Schaltfläche statt einer großen
+   unsichtbaren Klickfläche, die den Anfang der Antwort verdeckte. */
+.block_ai_chat_modal .message {
+    margin-top: 2rem;
+}
+.block_ai_chat_modal .message .copy {
+    top: -0.95rem;
+    right: 0.25rem;
+    padding: 1px 7px;
+    line-height: 1.3;
+    font-size: 0.85rem;
+    background: #fff;
+    border: 1px solid var(--format-tiles-colour-5, #c8d1db);
+    border-radius: 6px;
+    z-index: 2;
+}

@@ -429,8 +429,18 @@ class wissen {
         if (!$liste) {
             return '';
         }
-        return '<div class="kichat-quellen" style="font-size: 0.78rem; color: #6a737d; margin-top: 8px; padding-top: 4px; '
-            . 'border-top: 1px dashed #d5dbe3;">📚 Aus den Kursunterlagen: ' . implode(' · ', array_map('s', $liste)) . '</div>';
+        // Kurz halten (Wunsch der Nutzerin, 17.11.2026): nur der Lernpfad bzw. die Kachel, ohne Notebook- und Abschnittstitel, höchstens zwei.
+        $kurz = [];
+        foreach ($liste as $titel) {
+            $t = trim(preg_replace('/\s+[–-]\s+.*$/u', '', explode(' › ', $titel)[0]));
+            $t = preg_replace('/\s*\(🕒[^)]*\)/u', '', $t);
+            if ($t !== '') {
+                $kurz[$t] = true;
+            }
+        }
+        $kurz = array_slice(array_keys($kurz), 0, 2);
+        return '<div class="kichat-quellen" style="font-size: 0.75rem; color: #8a939c; margin-top: 6px;">📚 '
+            . implode(', ', array_map('s', $kurz)) . '</div>';
     }
 
     private static function kosinus(array $a, ?array $b): float {

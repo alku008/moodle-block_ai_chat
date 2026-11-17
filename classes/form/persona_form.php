@@ -132,6 +132,8 @@ class persona_form extends dynamic_form {
     protected function check_access_for_dynamic_submission(): void {
         global $USER;
         require_capability('block/ai_chat:view', $this->get_context_for_dynamic_submission());
+        // Lokal (17.11.2026): Persona-Formular (auch Wissensdateien) nur mit Bearbeitungsrecht.
+        require_capability('block/ai_chat:edit', $this->get_context_for_dynamic_submission());
         $manager = new manager($this->contextid, $this->component);
         $manager->require_manage_persona($this->_ajaxformdata['personaid'], $USER->id);
     }

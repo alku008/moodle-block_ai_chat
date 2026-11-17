@@ -45,12 +45,23 @@ class restore_ai_chat_block_task extends restore_block_task {
     }
 
     /**
-     * This plugin has no fileareas yet.
+     * Lokal (17.11.2026): Nach der Wiederherstellung die Wissensdateien des Kurses im Hintergrund neu zerlegen (Embeddings).
+     */
+    public function after_restore() {
+        $kurs = \context_course::instance($this->get_courseid(), IGNORE_MISSING);
+        if ($kurs) {
+            \block_ai_chat\task\wissen_zerlegen::planen($kurs->instanceid);
+        }
+    }
+
+    /**
+     * Lokal (17.11.2026): Wissensdateien des Kurses liegen im Dateibereich „kurswissen“ des KI-Chat-Blocks und reisen so mit
+     * Kurssicherungen mit (die Abschnitte werden nach der Wiederherstellung neu berechnet).
      *
      * @return array
      */
     public function get_fileareas() {
-        return [];
+        return ['kurswissen'];
     }
 
     /**

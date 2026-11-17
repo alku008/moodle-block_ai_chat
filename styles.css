@@ -581,3 +581,9 @@ body.block_ai_chat_replacehelp.block_ai_chat_chatwindow .block_ai_chat_modal:not
     border-radius: 6px;
     z-index: 2;
 }
+
+/* Lokal (17.11.2026): Während eines Testversuchs kein KI-Chat-Knopf (die Anfragen sperrt zusätzlich das Kontrollzentrum). */
+#page-mod-quiz-attempt #ai_chat_button,
+#page-mod-quiz-summary #ai_chat_button {
+    display: none !important;
+}

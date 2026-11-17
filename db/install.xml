@@ -91,5 +91,18 @@
         <INDEX NAME="personaid-contextid" UNIQUE="false" FIELDS="personaid, contextid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="block_ai_chat_quellen" COMMENT="Lokal: Titel der Wissensdatei-Abschnitte, die zu einer Antwort mitgeschickt wurden">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="logid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="local_ai_manager_request_log.id"/>
+        <FIELD NAME="quellen" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON-Liste der Titel"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="logid" UNIQUE="false" FIELDS="logid"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

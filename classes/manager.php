@@ -192,6 +192,8 @@ class manager {
             require_capability('block/ai_chat:managepersonatemplates', $this->context, $userid);
         } else {
             require_capability('block/ai_chat:view', $this->context, $userid);
+            // Lokal (17.11.2026): eigene Personas bearbeiten nur mit Bearbeitungsrecht.
+            require_capability('block/ai_chat:edit', $this->context, $userid);
         }
 
         $currentrecord = $DB->get_record('block_ai_chat_personas', ['id' => $data->id]);
@@ -423,11 +425,14 @@ class manager {
             $currentpersona = persona::get_current_persona($this->context->id);
             // Lokal (15.11.2026): passende Auszüge aus den Wissensdateien der Persona (alle Kurse) und des Kurses (KI-Kontrollzentrum).
             $kurskontext = \local_ai_manager\ai_manager_utils::find_closest_parent_course_context($this->context);
+            // Lokal (17.11.2026): Seite der Frage (Aktivität/Kachel) als Hinweis und für die Suche.
+            $seite = \block_ai_chat\local\seite::aus_referer($kurskontext);
             $wissen = \block_ai_chat\local\wissen::kontext(
                 $prompt,
                 empty($currentpersona) ? 0 : (int)$currentpersona->id,
-                $kurskontext ? (int)$kurskontext->id : 0
-            );
+                $kurskontext ? (int)$kurskontext->id : 0,
+                $seite ? $seite['kachel'] : ''
+            ) . \block_ai_chat\local\seite::hinweis($seite);
             if (!empty($currentpersona) || $wissen !== '') {
                 $options['conversationcontext'] = array_merge(
                     [
@@ -472,6 +477,8 @@ class manager {
             ];
         }
         $logentry = $DB->get_record('local_ai_manager_request_log', ['id' => $requestresult->get_logrecordid()]);
+        // Lokal (17.11.2026): merken, aus welchen Wissensdateien die Antwort schöpfen konnte („📚 Aus: …“).
+        \block_ai_chat\local\wissen::quellen_speichern((int)$logentry->id);
 
         return ['code' => 200, 'content' => $this->convert_log_entry_to_messages($logentry)];
     }
@@ -507,7 +514,8 @@ class manager {
 
                     'id' => $logentry->id . '-2',
                     'conversationid' => $logentry->itemid,
-                    'content' => $purpose->format_output($logentry->promptcompletion),
+                    'content' => $purpose->format_output($logentry->promptcompletion)
+                        . \block_ai_chat\local\wissen::quellen_html((int)$logentry->id),
                     'sender' => 'ai',
                     'messageMode' => $logentry->purpose === 'agent' ? 'agent' : 'chat',
                     'rendered' => false,

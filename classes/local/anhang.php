@@ -33,6 +33,25 @@ class anhang {
         return ['erlaubt' => self::erlaubt(), 'maxzeichen' => self::maxzeichen()];
     }
 
+    /** Start- und Folgevorschläge aus den Einstellungen (eine Zeile je Vorschlag; Folge: „Beschriftung | Prompt“). */
+    public static function vorschlaege(): array {
+        $zeilen = fn(string $name, string $standard) => array_values(array_filter(array_map('trim',
+            explode("\n", (string)(get_config('block_ai_chat', $name) === false ? $standard : get_config('block_ai_chat', $name)))), 'strlen'));
+        $start = $zeilen('startvorschlaege', self::STARTVORSCHLAEGE);
+        $folge = [];
+        foreach ($zeilen('folgevorschlaege', self::FOLGEVORSCHLAEGE) as $z) {
+            [$text, $prompt] = array_map('trim', explode('|', $z, 2) + [1 => '']);
+            if ($text !== '' && $prompt !== '') {
+                $folge[] = ['text' => $text, 'prompt' => $prompt];
+            }
+        }
+        return ['start' => $start, 'folge' => $folge];
+    }
+
+    public const STARTVORSCHLAEGE = "Ich komme bei Aufgabe … im Notebook … nicht weiter.\nErklär mir bitte diese Fehlermeldung: …\nWas bedeutet eigentlich …?";
+    public const FOLGEVORSCHLAEGE = "💡 Noch ein Tipp | Gib mir bitte noch einen Tipp – aber noch nicht die Lösung.\n"
+        . "🧩 Ähnliches Beispiel | Zeig mir bitte ein ähnliches, einfacheres Beispiel – nicht die Lösung meiner Aufgabe.";
+
     /** Wie viele Dateien die Person in den letzten 24 Stunden angehängt hat. */
     public static function heute(int $userid): int {
         global $DB;

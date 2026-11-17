@@ -32,3 +32,11 @@ $string['personawissenhinweis'] = '🌐 <strong>Gilt in allen Kursen</strong>, i
 $string['wissenmaxbytes'] = 'Höchstgröße je Wissensdatei (MB)';
 $string['personamaxfiles'] = 'Wissensdateien pro Persona';
 $string['personamaxfilesdesc'] = 'Gelten in allen Kursen, in denen die Persona gewählt ist. 0 = keine Persona-Wissensdateien.';
+$string['startvorschlaege'] = 'Startvorschläge im leeren Chat';
+$string['startvorschlaegedesc'] = 'Ein Vorschlag pro Zeile. Ein Klick schreibt ihn ins Eingabefeld (zum Ergänzen); „…“ wird markiert. Leer = keine.';
+$string['folgevorschlaege'] = 'Knöpfe nach einer Antwort (gestufte Hilfe)';
+$string['folgevorschlaegedesc'] = 'Eine Zeile pro Knopf: „Beschriftung | Text, der gesendet wird“. Leer = keine.';
+$string['kurswissenerzeugen'] = 'Aus den Kursinhalten erzeugen';
+$string['kurswissenerzeugeninfo'] = 'Stellt die Wissensdateien aus den sichtbaren Abschnitten zusammen: Textfelder, Seiten, Aufgabenbeschreibungen und Notebooks. Verborgene Inhalte, Inhalte nur für Gruppen (z. B. Lehrkräfte) und alles mit „Lösung“ oder „Lehrkräfte“ im Namen bleiben draußen, ebenso Tests. Danach im Chat prüfen, ob keine Lösungen dabei sind.';
+$string['kurswissenerzeugenfrage'] = 'Die bisherigen Wissensdateien dieses Kurses werden ersetzt. Fortfahren?';
+$string['kurswissenerzeugt'] = '{$a} Wissensdateien aus den Kursinhalten erzeugt. Die Abschnitte werden im Hintergrund vorbereitet (einige Minuten).';

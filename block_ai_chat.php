@@ -97,6 +97,9 @@ class block_ai_chat extends block_base {
         // Lokal (15.11.2026): Einstellungen für den 📎-Knopf (amd/src/anhang.js).
         $this->page->requires->js_init_code('window.blockAiChatAnhang = '
             . json_encode(\block_ai_chat\local\anhang::jsconfig()) . ';');
+        // Lokal (17.11.2026): Start- und Folgevorschläge (amd/src/vorschlaege.js).
+        $this->page->requires->js_init_code('window.blockAiChatVorschlaege = '
+            . json_encode(\block_ai_chat\local\anhang::vorschlaege()) . ';');
 
         if ($this->page->user_is_editing()) {
             return $this->content;

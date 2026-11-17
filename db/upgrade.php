@@ -127,5 +127,42 @@ function xmldb_block_ai_chat_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026111503, 'ai_chat');
     }
 
+    if ($oldversion < 2026111700) {
+        // Lokal: Kurs-Wissensdateien vom Kurskontext in den Kontext des KI-Chat-Blocks verschieben (dann reisen sie mit Sicherungen).
+        $fs = get_file_storage();
+        $kurse = $DB->get_fieldset_sql("SELECT DISTINCT contextid FROM {files} WHERE component = 'block_ai_chat' AND filearea = 'kurswissen'");
+        foreach ($kurse as $contextid) {
+            $ctx = context::instance_by_id($contextid, IGNORE_MISSING);
+            if (!$ctx || !$ctx instanceof context_course) {
+                continue;
+            }
+            $ziel = \block_ai_chat\local\wissen::kursablage($ctx);
+            if ($ziel->id == $ctx->id) {
+                continue;
+            }
+            foreach ($fs->get_area_files($ctx->id, 'block_ai_chat', 'kurswissen', 0, 'id', false) as $datei) {
+                if (!$fs->file_exists($ziel->id, 'block_ai_chat', 'kurswissen', 0, $datei->get_filepath(), $datei->get_filename())) {
+                    $fs->create_file_from_storedfile(['contextid' => $ziel->id], $datei);
+                }
+            }
+            $fs->delete_area_files($ctx->id, 'block_ai_chat', 'kurswissen', 0);
+        }
+        upgrade_block_savepoint(true, 2026111700, 'ai_chat');
+    }
+
+    if ($oldversion < 2026111702) {
+        // Lokal: Quellen („📚 Aus: …“) der Antworten.
+        $table = new xmldb_table('block_ai_chat_quellen');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('logid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('quellen', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('logid', XMLDB_INDEX_NOTUNIQUE, ['logid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_block_savepoint(true, 2026111702, 'ai_chat');
+    }
+
     return true;
 }

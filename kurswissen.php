@@ -34,6 +34,12 @@ class block_ai_chat_kurswissen_form extends moodleform {
 }
 
 $zurueck = new moodle_url('/course/view.php', ['id' => $courseid]);
+// Lokal (17.11.2026): Wissensdateien aus den Kursinhalten erzeugen (ersetzt die bisherigen Dateien).
+if (optional_param('erzeugen', 0, PARAM_BOOL) && confirm_sesskey()) {
+    core_php_time_limit::raise(300);
+    $dateien = \block_ai_chat\local\kursinhalte::erzeugen($kurs);
+    redirect($url, get_string('kurswissenerzeugt', 'block_ai_chat', count($dateien)), null, \core\output\notification::NOTIFY_SUCCESS);
+}
 $form = new block_ai_chat_kurswissen_form($url);
 if ($form->is_cancelled()) {
     redirect($zurueck);
@@ -56,5 +62,13 @@ if (wissen::kursmaxdateien() === 0) {
     echo $OUTPUT->notification(get_string('kurswissenaus', 'block_ai_chat'), 'warning');
 } else {
     $form->display();
+    // Erzeugen aus den Kursinhalten (mit Rückfrage, weil die Dateien oben ersetzt werden).
+    $erzeugen = new moodle_url($url, ['erzeugen' => 1, 'sesskey' => sesskey()]);
+    echo html_writer::div(
+        html_writer::tag('div', '✨ ' . get_string('kurswissenerzeugen', 'block_ai_chat'), ['style' => 'font-weight: bold; margin-bottom: 4px;'])
+        . html_writer::div(get_string('kurswissenerzeugeninfo', 'block_ai_chat'), '', ['style' => 'font-size: 0.9rem; color: #5b6670; margin-bottom: 8px;'])
+        . html_writer::link($erzeugen, get_string('kurswissenerzeugen', 'block_ai_chat'), ['class' => 'btn btn-secondary',
+            'onclick' => 'return confirm(' . json_encode(get_string('kurswissenerzeugenfrage', 'block_ai_chat')) . ');']),
+        '', ['style' => 'margin-top: 24px; padding: 12px 14px; border: 1px solid #d5dbe3; border-radius: 8px; background: #f8fafd;']);
 }
 echo $OUTPUT->footer();

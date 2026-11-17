@@ -73,6 +73,9 @@ class delete_persona extends external_api {
         self::validate_context($context);
 
         require_capability('block/ai_chat:view', $context);
+        // Lokal (17.11.2026): Personas anlegen, kopieren und löschen nur mit Bearbeitungsrecht (wie Auswählen) – sonst könnten
+        // Lernende über den Webservice eigene Personas samt Wissensdateien anlegen.
+        require_capability('block/ai_chat:edit', $context);
 
         $manager = new manager($contextid, $component);
         $manager->require_manage_persona($personaid, $USER->id);

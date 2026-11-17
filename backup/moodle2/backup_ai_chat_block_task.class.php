@@ -45,12 +45,13 @@ class backup_ai_chat_block_task extends backup_block_task {
     }
 
     /**
-     * This plugin has no fileareas yet.
+     * Lokal (17.11.2026): Wissensdateien des Kurses liegen im Dateibereich „kurswissen“ des KI-Chat-Blocks und reisen so mit
+     * Kurssicherungen mit (die Abschnitte werden nach der Wiederherstellung neu berechnet).
      *
      * @return array
      */
     public function get_fileareas() {
-        return [];
+        return ['kurswissen'];
     }
 
     /**

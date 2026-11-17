@@ -157,3 +157,11 @@ $string['personawissenhinweis'] = '🌐 <strong>Applies in all courses</strong> 
 $string['wissenmaxbytes'] = 'Maximum size per knowledge file (MB)';
 $string['personamaxfiles'] = 'Knowledge files per persona';
 $string['personamaxfilesdesc'] = 'They apply in all courses where the persona is selected. 0 = no persona knowledge files.';
+$string['startvorschlaege'] = 'Starter suggestions in an empty chat';
+$string['startvorschlaegedesc'] = 'One suggestion per line. A click writes it into the input field; "…" is selected. Empty = none.';
+$string['folgevorschlaege'] = 'Buttons after an answer (stepwise help)';
+$string['folgevorschlaegedesc'] = 'One line per button: "Label | text that is sent". Empty = none.';
+$string['kurswissenerzeugen'] = 'Create from course contents';
+$string['kurswissenerzeugeninfo'] = 'Builds the knowledge files from visible sections: text and media areas, pages, assignment descriptions and notebooks. Hidden content, group-restricted content (e.g. teachers) and anything named like a solution or for teachers is left out, as are quizzes. Please check in the chat that no solutions are included.';
+$string['kurswissenerzeugenfrage'] = 'The current knowledge files of this course will be replaced. Continue?';
+$string['kurswissenerzeugt'] = '{$a} knowledge files created from the course contents. Sections are prepared in the background (a few minutes).';

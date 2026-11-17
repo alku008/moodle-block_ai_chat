@@ -13,6 +13,9 @@ class wissen {
     /** Dateibereich im Kurskontext (itemid 0). */
     public const KURSAREA = 'kurswissen';
 
+    /** Titel der zuletzt mitgeschickten Abschnitte (für „📚 Aus: …“ unter der Antwort, siehe manager::request_ai). */
+    public static array $quellen = [];
+
     /** Tabelle mit den Abschnitten. */
     private const TABELLE = 'block_ai_chat_wissen';
 
@@ -65,9 +68,19 @@ class wissen {
         return self::optionen(self::personamaxdateien());
     }
 
+    /**
+     * Wo die Wissensdateien eines Kurses liegen: im Kontext des KI-Chat-Blocks des Kurses (so reisen sie mit Kurssicherungen mit,
+     * seit 17.11.2026); ohne Block im Kurskontext.
+     */
+    public static function kursablage(\context_course $kurs): \context {
+        global $DB;
+        $bi = $DB->get_records('block_instances', ['blockname' => 'ai_chat', 'parentcontextid' => $kurs->id], 'id', 'id', 0, 1);
+        return $bi ? \context_block::instance(reset($bi)->id) : $kurs;
+    }
+
     /** Bereich als [contextid, filearea, itemid, Spalten der Tabelle]. */
     private static function bereich(?\context_course $kurs, int $personaid = 0): array {
-        return $kurs ? [$kurs->id, self::KURSAREA, 0, ['personaid' => 0, 'contextid' => $kurs->id]]
+        return $kurs ? [self::kursablage($kurs)->id, self::KURSAREA, 0, ['personaid' => 0, 'contextid' => $kurs->id]]
             : [\context_system::instance()->id, self::PERSONAAREA, $personaid, ['personaid' => $personaid, 'contextid' => 0]];
     }
 
@@ -282,7 +295,7 @@ class wissen {
                     if (trim(preg_replace('/^\[[^\]]*\]/', '', $aktuell)) !== '') {
                         $ergebnis[] = $aktuell;
                     }
-                    if (preg_match('/^#\s+(Lernpfad|Kapitel|Modul|Thema|Teil|Unit)\s+\d+/iu', $ueberschrift)) {
+                    if (preg_match('/^#\s+(Lernpfad|Kapitel|Modul|Thema|Teil|Unit|Kachel|Abschnitt)\s+\d+/iu', $ueberschrift)) {
                         $oben = preg_replace('/\s+[–-]\s+.*$/u', '', $ueberschrift);   // „Lernpfad 8: Dictionaries – Worum“ → „Lernpfad 8: Dictionaries“
                         $haupt = $ueberschrift;
                     } else {
@@ -348,8 +361,9 @@ class wissen {
     /**
      * Passende Auszüge zur Frage als Text für die Persona-Anweisung (leer, wenn die Persona keine Wissensdateien hat).
      */
-    public static function kontext(string $frage, int $personaid, int $kurscontextid): string {
+    public static function kontext(string $frage, int $personaid, int $kurscontextid, string $seite = ''): string {
         global $DB;
+        self::$quellen = [];
         // Wissensdateien der gewählten Persona (alle Kurse) und des Kurses (nur dieser Kurs).
         $abschnitte = $DB->get_records_select(self::TABELLE,
             '(personaid > 0 AND personaid = ? AND contextid = 0) OR (personaid = 0 AND contextid > 0 AND contextid = ?)',
@@ -365,7 +379,8 @@ class wissen {
             $text = $a->filename . ' ' . $a->content;
             $titel = preg_match('/^\[([^\]]*)\]/u', $a->content, $tm) ? $tm[1] : '';
             $wort = self::wortpunkte($frage, $text) + self::aufgabenbonus($frage, $a->content)
-                + self::titelbonus($frage, $titel);   // Thema der Frage im Lernpfad-/Notebook-Titel
+                + self::titelbonus($frage, $titel)   // Thema der Frage im Lernpfad-/Notebook-Titel
+                + ($seite !== '' ? 1.0 * self::titelbonus($seite, $titel) : 0);   // Kachel, von der aus gefragt wird
             if ($fragevektor && !empty($a->embedding)) {
                 $punkte[$id] = self::kosinus($fragevektor, json_decode($a->embedding, true)) + 0.3 * $wort;
             } else {
@@ -385,10 +400,37 @@ class wissen {
             }
             $zeichen += \core_text::strlen($a->content);
             $auszuege[] = '--- Aus der Datei „' . $a->filename . '“ ---' . "\n" . $a->content;
+            $titel = preg_match('/^\[([^\]]*)\]/u', $a->content, $tm) ? $tm[1] : pathinfo($a->filename, PATHINFO_FILENAME);
+            $teile = explode(' › ', $titel);
+            if (count($teile) === 2 && strpos($teile[1], $teile[0]) === 0) {
+                $titel = $teile[1];   // „Lernpfad 8: Dictionaries › Lernpfad 8: Dictionaries – Worum“ → nur der zweite Teil
+            }
+            self::$quellen[$titel] = true;
         }
         return "\n\n## Wissensdateien\nDie Lehrkraft hat dir Wissensdateien gegeben. Hier sind die Auszüge, die am besten zur aktuellen Frage passen. "
             . "Nutze sie für deine Antwort und nenne bei Bedarf die Datei bzw. Aufgabe. Wenn die Auszüge nicht zur Frage passen, sag das "
             . "und frag nach.\n\n" . implode("\n\n", $auszuege);
+    }
+
+    /** Quellen einer Antwort speichern (Log-Eintrag des AI Managers). */
+    public static function quellen_speichern(int $logid): void {
+        global $DB;
+        if ($logid && self::$quellen) {
+            $DB->insert_record('block_ai_chat_quellen', ['logid' => $logid,
+                'quellen' => json_encode(array_slice(array_keys(self::$quellen), 0, 4), JSON_UNESCAPED_UNICODE)]);
+        }
+    }
+
+    /** HTML-Zeile „📚 Aus: …“ für eine Antwort (leer, wenn keine Wissensdateien benutzt wurden). */
+    public static function quellen_html(int $logid): string {
+        global $DB;
+        $json = $logid ? $DB->get_field('block_ai_chat_quellen', 'quellen', ['logid' => $logid]) : false;
+        $liste = $json ? json_decode($json, true) : [];
+        if (!$liste) {
+            return '';
+        }
+        return '<div class="kichat-quellen" style="font-size: 0.78rem; color: #6a737d; margin-top: 8px; padding-top: 4px; '
+            . 'border-top: 1px dashed #d5dbe3;">📚 Aus den Kursunterlagen: ' . implode(' · ', array_map('s', $liste)) . '</div>';
     }
 
     private static function kosinus(array $a, ?array $b): float {
@@ -430,7 +472,7 @@ class wissen {
     /** Füllwörter, die im Titelvergleich nicht zählen. */
     private const FUELLWOERTER = ['aufgabe', 'notebook', 'nicht', 'weiter', 'komme', 'hilfe', 'helfen', 'bitte', 'warum', 'wieso',
         'weshalb', 'kannst', 'könnte', 'habe', 'meine', 'meinem', 'meiner', 'diese', 'dieser', 'dieses', 'dass', 'wird', 'sind', 'eine',
-        'einen', 'einer', 'beim', 'immer', 'schon', 'noch', 'erklär', 'erkläre', 'verstehe', 'funktioniert', 'lernpfad', 'datei', 'finde', 'finden', 'gibt', 'geht', 'mache', 'machen'];
+        'einen', 'einer', 'beim', 'immer', 'schon', 'noch', 'erklär', 'erkläre', 'verstehe', 'funktioniert', 'lernpfad', 'datei', 'notebooks', 'abgabe', 'deine', 'deinen', 'finde', 'finden', 'gibt', 'geht', 'mache', 'machen'];
 
     /** 0,6, wenn ein Inhaltswort der Frage (Wortanfang, ab 4 Buchstaben) im Titel des Abschnitts steht („Listen“ ~ „Liste“). */
     private static function titelbonus(string $frage, string $titel): float {

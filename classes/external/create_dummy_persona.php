@@ -72,6 +72,9 @@ class create_dummy_persona extends external_api {
         // In theory even the view permission for the current context could be omitted, but
         // we keep it just in case.
         require_capability('block/ai_chat:view', $context);
+        // Lokal (17.11.2026): Personas anlegen, kopieren und löschen nur mit Bearbeitungsrecht (wie Auswählen) – sonst könnten
+        // Lernende über den Webservice eigene Personas samt Wissensdateien anlegen.
+        require_capability('block/ai_chat:edit', $context);
 
         $manager = new manager($contextid, $component);
         return $manager->create_dummy_persona();

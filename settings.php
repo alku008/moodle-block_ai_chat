@@ -89,6 +89,12 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_description('block_ai_chat/embeddingstatus', '',
             $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
                 : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
+        $settings->add(new admin_setting_configtextarea('block_ai_chat/startvorschlaege',
+            new lang_string('startvorschlaege', 'block_ai_chat'), new lang_string('startvorschlaegedesc', 'block_ai_chat'),
+            \block_ai_chat\local\anhang::STARTVORSCHLAEGE));
+        $settings->add(new admin_setting_configtextarea('block_ai_chat/folgevorschlaege',
+            new lang_string('folgevorschlaege', 'block_ai_chat'), new lang_string('folgevorschlaegedesc', 'block_ai_chat'),
+            \block_ai_chat\local\anhang::FOLGEVORSCHLAEGE));
         $settings->add(new admin_setting_configcheckbox('block_ai_chat/chatupload',
             new lang_string('chatupload', 'block_ai_chat'), new lang_string('chatuploaddesc', 'block_ai_chat'), 1));
         $settings->add(new admin_setting_configtext('block_ai_chat/chatuploadsperday',

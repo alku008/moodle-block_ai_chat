@@ -96,10 +96,10 @@ class block_ai_chat extends block_base {
         $this->content->text = $aioutput->render_ai_chat_content($this);
         // Lokal (15.11.2026): Einstellungen für den 📎-Knopf (amd/src/anhang.js).
         $this->page->requires->js_init_code('window.blockAiChatAnhang = '
-            . json_encode(\block_ai_chat\local\anhang::jsconfig()) . ';');
+            . json_encode(\block_ai_chat\local\anhang::jsconfig(), JSON_HEX_TAG | JSON_HEX_AMP) . ';');
         // Lokal (17.11.2026): Start- und Folgevorschläge (amd/src/vorschlaege.js).
         $this->page->requires->js_init_code('window.blockAiChatVorschlaege = '
-            . json_encode(\block_ai_chat\local\anhang::vorschlaege()) . ';');
+            . json_encode(\block_ai_chat\local\anhang::vorschlaege(), JSON_HEX_TAG | JSON_HEX_AMP) . ';');
 
         if ($this->page->user_is_editing()) {
             return $this->content;
@@ -177,6 +177,10 @@ class block_ai_chat extends block_base {
         $DB->delete_records('block_ai_chat_personas_selected', ['contextid' => $this->context->id]);
         $DB->delete_records('block_ai_chat_options', ['contextid' => $this->context->id]);
         ai_manager_utils::mark_log_entries_as_deleted('block_ai_chat', $this->context->id);
+        // Lokal: Die Kurs-Wissensdateien liegen im Kontext dieses Blocks (Moodle löscht sie mit); ihre Abschnitte ebenfalls löschen.
+        if ($kurs = $this->context->get_course_context(false)) {
+            \block_ai_chat\local\wissen::kurs_loeschen($kurs);
+        }
         return true;
     }
 }

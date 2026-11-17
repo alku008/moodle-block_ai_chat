@@ -19,7 +19,7 @@ class wissen {
     /** Tabelle mit den Abschnitten. */
     private const TABELLE = 'block_ai_chat_wissen';
 
-    /** Erlaubte Dateitypen. PDF liest pdftotext (falls auf dem Server) oder der mitgelieferte PdfParser (thirdparty/pdfparser). */
+    /** Erlaubte Dateitypen. PDF liest der mitgelieferte PdfParser (thirdparty/pdfparser, reines PHP, kein Programm auf dem Server nötig). */
     public const TYPEN = ['.txt', '.md', '.ipynb', '.py', '.html', '.htm', '.csv', '.docx', '.pdf'];
 
     /** Zielgröße eines Abschnitts in Zeichen. */
@@ -29,11 +29,12 @@ class wissen {
     private const TREFFER = 4;
     private const MAXZEICHEN = 5000;
 
-    private static function pdftotext(): string {
-        global $CFG;
-        $programm = !empty($CFG->pathtopdftotext) ? $CFG->pathtopdftotext : trim((string)@shell_exec('command -v pdftotext'));
-        return ($programm !== '' && is_executable($programm)) ? $programm : '';
-    }
+    /** Höchstens so viele Abschnitte pro Bereich (Kurs bzw. Persona) – begrenzt Speicher und Rechenzeit bei jeder Frage. */
+    private const MAXABSCHNITTE = 400;
+
+    /** Zeitlimit (Sekunden) für das Embedding einer Frage im Chat; beim Zerlegen der Dateien länger. */
+    private const TIMEOUT_FRAGE = 8;
+    private const TIMEOUT_ZERLEGEN = 60;
 
     // ---- Zwei Orte für Wissensdateien ----
     // Kurs (KI-Kontrollzentrum → kurswissen.php): Bereich „kurswissen“ im Kurskontext, gilt nur in diesem Kurs, für jede Persona.
@@ -160,6 +161,7 @@ class wissen {
     /** Dateien eines Bereichs zerlegen, Embeddings berechnen, Abschnitte speichern. */
     private static function zerlegen(array $b): int {
         global $DB;
+        \core_php_time_limit::raise(600);
         $DB->delete_records(self::TABELLE, $b[3]);
         $abschnitte = [];
         foreach (self::dateien($b) as $datei) {
@@ -172,10 +174,15 @@ class wissen {
         if (!$abschnitte) {
             return 0;
         }
+        if (count($abschnitte) > self::MAXABSCHNITTE) {
+            debugging('block_ai_chat Wissensdateien: nur die ersten ' . self::MAXABSCHNITTE . ' von ' . count($abschnitte)
+                . ' Abschnitten werden verwendet.', DEBUG_DEVELOPER);
+            $abschnitte = array_slice($abschnitte, 0, self::MAXABSCHNITTE);
+        }
         // Embeddings in Paketen zu 16 Abschnitten; schlägt das fehl, bleibt die Suche per Wortvergleich.
         foreach (array_chunk(array_keys($abschnitte), 16) as $paket) {
             $texte = array_map(fn($i) => $abschnitte[$i]->filename . "\n" . $abschnitte[$i]->content, $paket);
-            $vektoren = self::embeddings($texte);
+            $vektoren = self::embeddings($texte, self::TIMEOUT_ZERLEGEN);
             if ($vektoren === null) {
                 break;
             }
@@ -214,11 +221,14 @@ class wissen {
                 $tmp = $datei->copy_content_to_temp();
                 $zip = new \ZipArchive();
                 $text = '';
-                if ($tmp && $zip->open($tmp) === true) {
+                $stat = ($tmp && $zip->open($tmp) === true) ? $zip->statName('word/document.xml') : false;
+                if ($stat && $stat['size'] <= 30 * 1024 * 1024) {   // entpackt höchstens 30 MB
                     $xml = (string)$zip->getFromName('word/document.xml');
                     $zip->close();
                     $xml = preg_replace('~</w:p>~', "\n\n", $xml);
                     $text = html_entity_decode(strip_tags($xml), ENT_QUOTES | ENT_XML1, 'UTF-8');
+                } else if ($stat) {
+                    $zip->close();
                 }
                 @unlink($tmp);
                 return $text;
@@ -229,17 +239,10 @@ class wissen {
         }
     }
 
-    /** PDF-Text: mit pdftotext, falls auf dem Server vorhanden (sonst leer). */
+    /** PDF-Text über den mitgelieferten PDF-Leser (leer, wenn die Datei nicht lesbar ist). */
     private static function pdftext(\stored_file $datei): string {
-        $programm = self::pdftotext();
-        if ($programm !== '') {
-            $tmp = $datei->copy_content_to_temp();
-            $text = (string)@shell_exec(escapeshellarg($programm) . ' -q -enc UTF-8 ' . escapeshellarg($tmp) . ' -');
-            @unlink($tmp);
-            if (trim($text) !== '') {
-                return $text;
-            }
-        }
+        raise_memory_limit(MEMORY_EXTRA);
+        \core_php_time_limit::raise(120);
         // Mitgelieferter PDF-Leser in reinem PHP (smalot/pdfparser 2.13.1, LGPL-3.0), Seite für Seite.
         static $geladen = false;
         $geladen = $geladen || spl_autoload_register(function ($klasse) {
@@ -327,7 +330,36 @@ class wissen {
     }
 
 
-    /** Name des Embedding-Modells bei AIS.chat. */
+    /**
+     * Lässt der AI Manager eine Chat-Anfrage dieser Person hier überhaupt zu (Mandant, Sperren, Kontrollzentrum, Limits)?
+     * Erst dann wird die Frage für die Suche in den Wissensdateien an den Embedding-Dienst geschickt.
+     */
+    public static function anfrage_erlaubt(int $contextid): bool {
+        global $USER;
+        try {
+            $konfig = \local_ai_manager\ai_manager_utils::get_ai_config($USER, $contextid, null, ['chat']);
+        } catch (\Throwable $e) {
+            return false;
+        }
+        $frei = \local_ai_manager\ai_manager_utils::AVAILABILITY_AVAILABLE;
+        if (($konfig['availability']['available'] ?? '') !== $frei) {
+            return false;
+        }
+        foreach ($konfig['purposes'] ?? [] as $p) {
+            if (($p['purpose'] ?? '') === 'chat') {
+                return ($p['available'] ?? '') === $frei;
+            }
+        }
+        return false;
+    }
+
+    /** Abschnitte der Kurs-Wissensdateien löschen (wenn der KI-Chat-Block mit seinen Dateien gelöscht wird). */
+    public static function kurs_loeschen(\context_course $kurs): void {
+        global $DB;
+        $DB->delete_records(self::TABELLE, ['personaid' => 0, 'contextid' => $kurs->id]);
+    }
+
+    /** Name des Embedding-Modells (Einstellung embeddingmodel). */
     public static function modell(): string {
         return trim((string)get_config('block_ai_chat', 'embeddingmodel')) ?: 'BAAI/bge-m3';
     }
@@ -337,7 +369,7 @@ class wissen {
      *
      * @return array|null Liste von Vektoren oder null, wenn kein Embedding-Modell erreichbar ist
      */
-    public static function embeddings(array $texte): ?array {
+    public static function embeddings(array $texte, int $timeout = self::TIMEOUT_FRAGE): ?array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
         $basis = rtrim((string)get_config('aitool_telli', 'baseurl'), '/');
@@ -345,13 +377,19 @@ class wissen {
         if ($basis === '' || $schluessel === '' || !$texte) {
             return null;
         }
+        // War der Dienst eben nicht erreichbar, 5 Minuten nicht erneut versuchen (sonst wartet jede Chatfrage auf das Zeitlimit).
+        $status = \cache::make_from_params(\cache_store::MODE_APPLICATION, 'block_ai_chat', 'embeddingstatus');
+        if ((int)$status->get('fehler') > time() - 300) {
+            return null;
+        }
         $curl = new \curl();
         $curl->setHeader(['Authorization: Bearer ' . $schluessel, 'Content-Type: application/json']);
         $antwort = $curl->post($basis . '/v1/embeddings', json_encode(['model' => self::modell(), 'input' => array_values($texte)]),
-            ['CURLOPT_TIMEOUT' => 60]);
+            ['CURLOPT_TIMEOUT' => $timeout, 'CURLOPT_CONNECTTIMEOUT' => min(5, $timeout)]);
         $daten = json_decode((string)$antwort, true);
         if (empty($daten['data']) || count($daten['data']) !== count($texte)) {
             debugging('block_ai_chat Wissensdateien: keine Embeddings (' . substr((string)$antwort, 0, 200) . ')', DEBUG_DEVELOPER);
+            $status->set('fehler', time());
             return null;
         }
         usort($daten['data'], fn($a, $b) => ($a['index'] ?? 0) <=> ($b['index'] ?? 0));
@@ -372,6 +410,13 @@ class wissen {
             return '';
         }
         $punkte = [];
+        // Nur Vektoren des eingestellten Modells sind vergleichbar (nach einem Modellwechsel: Dateien neu speichern bzw. Aufgabe abwarten).
+        $modell = self::modell();
+        foreach ($abschnitte as $a) {
+            if ($a->model !== $modell) {
+                $a->embedding = null;
+            }
+        }
         $mitvektor = array_filter($abschnitte, fn($a) => !empty($a->embedding));
         $fragevektor = $mitvektor ? (self::embeddings([$frage])[0] ?? null) : null;
         foreach ($abschnitte as $id => $a) {

@@ -49,7 +49,7 @@ define(['local_ai_manager/infobox', 'local_ai_manager/warningbox'], function(Inf
         titel.textContent = '🤖 Bevor du startest';
         var liste = document.createElement('ul');
         liste.style.cssText = 'margin: 0 0 10px 0; padding-left: 1.2rem;';
-        ['Deine Eingaben gehen an ein externes KI-System (AIS.chat).',
+        ['Deine Eingaben gehen an ein externes KI-System.',
             'Gib keine persönlichen Daten ein – keine Namen, Adressen, Noten oder Fotos von Personen.',
             'Die KI kann Fehler machen. Prüfe die Antworten, bevor du sie verwendest.'].forEach(function(t) {
             var li = document.createElement('li');

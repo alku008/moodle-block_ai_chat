@@ -427,7 +427,8 @@ class manager {
             $kurskontext = \local_ai_manager\ai_manager_utils::find_closest_parent_course_context($this->context);
             // Lokal (17.11.2026): Seite der Frage (Aktivität/Kachel) als Hinweis und für die Suche.
             $seite = \block_ai_chat\local\seite::aus_referer($kurskontext);
-            $wissen = \block_ai_chat\local\wissen::kontext(
+            // Wissensdateien nur, wenn der AI Manager die Anfrage zulässt (sonst ginge die Frage ungeprüft an den Embedding-Dienst).
+            $wissen = !\block_ai_chat\local\wissen::anfrage_erlaubt($this->context->id) ? '' : \block_ai_chat\local\wissen::kontext(
                 $prompt,
                 empty($currentpersona) ? 0 : (int)$currentpersona->id,
                 $kurskontext ? (int)$kurskontext->id : 0,

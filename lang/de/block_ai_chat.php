@@ -42,3 +42,11 @@ $string['kurswissenerzeugenfrage'] = 'Die bisherigen Wissensdateien dieses Kurse
 $string['kurswissenerzeugt'] = '{$a} Wissensdateien aus den Kursinhalten erzeugt. Die Abschnitte werden im Hintergrund vorbereitet (einige Minuten).';
 $string['kurswissenerzeugenjetzt'] = 'Wissensdateien erzeugen';
 $string['kurswissenvorschauinfo'] = 'Prüfe die Auswahl: Nur angehakte Inhalte kommen in die Wissensdateien. ⚠️ markiert Inhalte, die nicht vorausgewählt sind – verborgen, mit Zugangsbedingung (z. B. nur für eine Gruppe, nach Abgabe, ab Datum) oder mit einem Namen, der nach Lösung oder Lehrkräften klingt. Lösungen nie anhaken: Die KI könnte sie verraten. Dateien mit „Lösung“ o. Ä. im Namen werden immer übersprungen.';
+// Lokale Erweiterung (AIS.chat Hamburg): Datenschutz und Aufräum-Aufgabe.
+$string['privacy:metadata:embedding'] = 'Um passende Stellen in den Wissensdateien zu finden, wird die Frage an den Embedding-Dienst des eingestellten KI-Dienstes geschickt (Telli-Anschluss von local_ai_manager).';
+$string['privacy:metadata:embedding:prompttext'] = 'Die im Chat eingegebene Frage.';
+$string['privacy:metadata:files'] = 'Wissensdateien für eine Persona oder einen Kurs werden über die Datei-API gespeichert.';
+$string['privacy:metadata:quellen'] = 'Welche Abschnitte der Wissensdateien für eine Antwort verwendet wurden (verknüpft mit dem Protokoll von local_ai_manager).';
+$string['privacy:metadata:quellen:logid'] = 'Der Protokolleintrag der Antwort.';
+$string['privacy:metadata:quellen:quellen'] = 'Titel der verwendeten Abschnitte.';
+$string['task_quellen_aufraeumen'] = 'Quellen gelöschter Chat-Protokolleinträge entfernen';

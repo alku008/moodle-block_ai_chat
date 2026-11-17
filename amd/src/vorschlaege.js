@@ -7,7 +7,7 @@ define([], function() {
     'use strict';
 
     var STANDARD = {
-        start: ['Ich komme bei Aufgabe … im Notebook … nicht weiter.', 'Erklär mir bitte diese Fehlermeldung: …',
+        start: ['Ich komme bei der Aufgabe … nicht weiter.', 'Erklär mir bitte noch einmal: …',
             'Was bedeutet eigentlich …?'],
         folge: [{text: '💡 Noch ein Tipp', prompt: 'Gib mir bitte noch einen Tipp – aber noch nicht die Lösung.'},
             {text: '🧩 Ähnliches Beispiel', prompt: 'Zeig mir bitte ein ähnliches, einfacheres Beispiel – nicht die Lösung meiner Aufgabe.'}]

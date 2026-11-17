@@ -26,6 +26,9 @@ class seite {
             $modinfo = get_fast_modinfo($courseid);
             if (preg_match('#/mod/[a-z0-9_]+/view\.php$#', $pfad) && !empty($p['id'])) {
                 $cm = $modinfo->get_cm((int)$p['id']);
+                if (!$cm->uservisible) {
+                    return null;
+                }
                 $section = $modinfo->get_section_info($cm->sectionnum);
                 return ['aktivitaet' => $cm->get_formatted_name(), 'kachel' => get_section_name($courseid, $section)];
             }

@@ -48,7 +48,7 @@ class anhang {
         return ['start' => $start, 'folge' => $folge];
     }
 
-    public const STARTVORSCHLAEGE = "Ich komme bei Aufgabe … im Notebook … nicht weiter.\nErklär mir bitte diese Fehlermeldung: …\nWas bedeutet eigentlich …?";
+    public const STARTVORSCHLAEGE = "Ich komme bei der Aufgabe … nicht weiter.\nErklär mir bitte noch einmal: …\nWas bedeutet eigentlich …?";
     public const FOLGEVORSCHLAEGE = "💡 Noch ein Tipp | Gib mir bitte noch einen Tipp – aber noch nicht die Lösung.\n"
         . "🧩 Ähnliches Beispiel | Zeig mir bitte ein ähnliches, einfacheres Beispiel – nicht die Lösung meiner Aufgabe.";
 
@@ -57,7 +57,7 @@ class anhang {
         global $DB;
         return $DB->count_records_select('local_ai_manager_request_log',
             'userid = ? AND component = ? AND timecreated > ? AND ' . $DB->sql_like('prompttext', '?'),
-            [$userid, 'block_ai_chat', time() - DAYSECS, '📎 Datei „%']);
+            [$userid, 'block_ai_chat', time() - DAYSECS, '%📎 Datei „%']);
     }
 
     /**
@@ -66,14 +66,15 @@ class anhang {
      * @return string Fehlermeldung oder leer
      */
     public static function pruefen(string $prompt, int $userid): string {
-        if (strpos($prompt, '📎 Datei „') !== 0) {
+        // Obergrenze für jede Frage (auch ohne Markierung): Anhang plus 2000 Zeichen eigener Text.
+        if (\core_text::strlen($prompt) > self::maxzeichen() + 2000) {
+            return 'Die Nachricht ist zu lang (höchstens ' . (self::maxzeichen() + 2000) . ' Zeichen).';
+        }
+        if (strpos($prompt, '📎 Datei „') === false) {
             return '';
         }
         if (!self::erlaubt()) {
             return 'Dateien im Chat sind auf dieser Website ausgeschaltet.';
-        }
-        if (\core_text::strlen($prompt) > self::maxzeichen() + 2000) {
-            return 'Die angehängte Datei ist zu groß (höchstens ' . self::maxzeichen() . ' Zeichen).';
         }
         if (self::protag() > 0 && self::heute($userid) >= self::protag()) {
             return 'Du kannst höchstens ' . self::protag() . ' Dateien pro Tag im Chat anhängen. Morgen geht es weiter.';

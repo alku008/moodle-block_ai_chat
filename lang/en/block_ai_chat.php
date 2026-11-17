@@ -167,3 +167,11 @@ $string['kurswissenerzeugenfrage'] = 'The current knowledge files of this course
 $string['kurswissenerzeugt'] = '{$a} knowledge files created from the course contents. Sections are prepared in the background (a few minutes).';
 $string['kurswissenerzeugenjetzt'] = 'Create knowledge files';
 $string['kurswissenvorschauinfo'] = 'Check the selection: only ticked contents go into the knowledge files. ⚠️ marks contents that are not preselected – hidden, with access restrictions (e.g. group only, after submission, from a date) or named like a solution or for teachers. Never tick solutions: the AI might reveal them. Files named like solutions are always skipped.';
+// Local extension (AIS.chat Hamburg): privacy and cleanup task.
+$string['privacy:metadata:embedding'] = 'To find matching passages in the knowledge files, the question is sent to the embedding endpoint of the configured AI service (telli connector of local_ai_manager).';
+$string['privacy:metadata:embedding:prompttext'] = 'The question entered in the chat.';
+$string['privacy:metadata:files'] = 'Knowledge files uploaded for a persona or a course are stored with the file API.';
+$string['privacy:metadata:quellen'] = 'Which knowledge file sections were used for an answer (linked to the request log of local_ai_manager).';
+$string['privacy:metadata:quellen:logid'] = 'The request log entry of the answer.';
+$string['privacy:metadata:quellen:quellen'] = 'Titles of the knowledge file sections used.';
+$string['task_quellen_aufraeumen'] = 'Remove sources of deleted chat log entries';

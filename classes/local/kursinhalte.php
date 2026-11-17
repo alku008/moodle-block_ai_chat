@@ -151,12 +151,13 @@ class kursinhalte {
                 break;
             case 'unilabel':
                 $html = (string)$DB->get_field('unilabel', 'intro', ['id' => $cm->instance]);
-                foreach ($DB->get_records_sql("SELECT s.heading, s.content FROM {unilabeltype_accordion_seg} s
+                $dbman = $DB->get_manager();
+                foreach (!$dbman->table_exists('unilabeltype_accordion_seg') ? [] : $DB->get_records_sql("SELECT s.heading, s.content FROM {unilabeltype_accordion_seg} s
                         JOIN {unilabeltype_accordion} a ON a.id = s.accordionid WHERE a.unilabelid = ? ORDER BY s.sortorder",
                         [$cm->instance]) as $s) {
                     $html .= '<h3>' . $s->heading . '</h3>' . $s->content;
                 }
-                foreach ($DB->get_records_sql("SELECT t.title, t.content FROM {unilabeltype_grid_tile} t
+                foreach (!$dbman->table_exists('unilabeltype_grid_tile') ? [] : $DB->get_records_sql("SELECT t.title, t.content FROM {unilabeltype_grid_tile} t
                         JOIN {unilabeltype_grid} g ON g.id = t.gridid WHERE g.unilabelid = ? ORDER BY t.sortorder",
                         [$cm->instance]) as $t) {
                     $html .= '<h3>' . $t->title . '</h3>' . $t->content;

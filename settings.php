@@ -84,11 +84,15 @@ if ($hassiteconfig) {
                 PARAM_TEXT
             )
         );
-        // Prüfen, ob das Embedding-Modell erreichbar ist (eine kurze Probe-Anfrage, nur auf dieser Einstellungsseite).
-        $probe = \block_ai_chat\local\wissen::embeddings(['Test']);
-        $settings->add(new admin_setting_description('block_ai_chat/embeddingstatus', '',
-            $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
-                : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
+        // Prüfen, ob das Embedding-Modell erreichbar ist: eine kurze Probe-Anfrage, nur beim Aufruf genau dieser Einstellungsseite im
+        // Browser (nicht bei der Admin-Suche, beim Upgrade oder auf der Kommandozeile).
+        if (!CLI_SCRIPT && !during_initial_install() && empty($CFG->upgraderunning)
+                && ($_GET['section'] ?? '') === 'blocksettingai_chat' && strpos($_SERVER['SCRIPT_NAME'] ?? '', '/admin/settings.php') !== false) {
+            $probe = \block_ai_chat\local\wissen::embeddings(['Test'], 5);
+            $settings->add(new admin_setting_description('block_ai_chat/embeddingstatus', '',
+                $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
+                    : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
+        }
         $settings->add(new admin_setting_configtextarea('block_ai_chat/startvorschlaege',
             new lang_string('startvorschlaege', 'block_ai_chat'), new lang_string('startvorschlaegedesc', 'block_ai_chat'),
             \block_ai_chat\local\anhang::STARTVORSCHLAEGE));

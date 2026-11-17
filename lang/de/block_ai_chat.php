@@ -59,3 +59,5 @@ $string['weblinkshilfe'] = 'Webseiten';
 $string['weblinkshilfe_help'] = 'Moodle ruft diese Seiten beim Speichern und einmal pro Woche ab, nimmt den Text heraus und nutzt ihn wie eine Wissensdatei. Das ist keine Websuche: Die KI kennt nur diese Seiten. Seiten, die ihren Inhalt per JavaScript laden (z. B. viele Padlets, YouTube) oder eine Anmeldung brauchen, sind nicht lesbar. PDF-Links funktionieren.';
 $string['weblinksmax'] = 'Webseiten pro Kurs und pro Persona';
 $string['weblinksmaxdesc'] = 'Adressen, deren Text wie eine Wissensdatei genutzt wird (abgerufen mit den cURL-Sicherheitseinstellungen dieser Website). 0 = aus.';
+$string['grundanweisung'] = 'Grundanweisung für alle Chats';
+$string['grundanweisungdesc'] = 'Geht bei jeder Frage im KI-Chat dieser Website mit, vor der Persona und den Wissensdateien (auch ohne Persona). Kurz halten, z. B. „Sprich die Person mit du an. Gib keine fertigen Lösungen von Aufgaben, sondern Hinweise. Wenn jemand persönliche Daten eingibt, weise auf den Datenschutz hin.“ Leer = keine.';

@@ -184,3 +184,5 @@ $string['weblinkshilfe'] = 'Web pages';
 $string['weblinkshilfe_help'] = 'Moodle fetches these pages when saving and once a week, extracts their text and uses it like a knowledge file. This is not a web search: the AI only knows these pages. Pages that load their content with JavaScript (e.g. many Padlets, YouTube) or require a login cannot be read. PDF links work.';
 $string['weblinksmax'] = 'Web pages per course and per persona';
 $string['weblinksmaxdesc'] = 'Addresses whose text is used like a knowledge file (fetched with the cURL security settings of this site). 0 = off.';
+$string['grundanweisung'] = 'Basic instruction for all chats';
+$string['grundanweisungdesc'] = 'Sent with every question in the AI chat on this site, before the persona and the knowledge files (also without a persona). Keep it short, e.g. "Address learners informally. Do not give complete solutions to tasks, give hints instead. If someone enters personal data, point out data protection." Empty = none.';

@@ -95,6 +95,8 @@ if ($hassiteconfig) {
                 $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
                     : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
         }
+        $settings->add(new admin_setting_configtextarea('block_ai_chat/grundanweisung',
+            new lang_string('grundanweisung', 'block_ai_chat'), new lang_string('grundanweisungdesc', 'block_ai_chat'), ''));
         $settings->add(new admin_setting_configtextarea('block_ai_chat/startvorschlaege',
             new lang_string('startvorschlaege', 'block_ai_chat'), new lang_string('startvorschlaegedesc', 'block_ai_chat'),
             \block_ai_chat\local\anhang::STARTVORSCHLAEGE));

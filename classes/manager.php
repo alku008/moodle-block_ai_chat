@@ -434,12 +434,15 @@ class manager {
                 $kurskontext ? (int)$kurskontext->id : 0,
                 $seite ? $seite['kachel'] : ''
             ) . \block_ai_chat\local\seite::hinweis($seite);
-            if (!empty($currentpersona) || $wissen !== '') {
+            // Lokal (17.11.2026): Grundanweisung der Administration für alle Chats (vor der Persona; die Persona kann sie ergänzen).
+            $grund = trim((string)get_config('block_ai_chat', 'grundanweisung'));
+            if (!empty($currentpersona) || $wissen !== '' || $grund !== '') {
                 $options['conversationcontext'] = array_merge(
                     [
                         [
                             'sender' => 'system',
-                            'message' => (empty($currentpersona) ? '' : $currentpersona->prompt) . $wissen,
+                            'message' => ($grund !== '' ? "## Grundregeln dieser Schule (gelten immer)\n" . $grund . "\n\n" : '')
+                                . (empty($currentpersona) ? '' : $currentpersona->prompt) . $wissen,
                         ],
                     ],
                     $options['conversationcontext']

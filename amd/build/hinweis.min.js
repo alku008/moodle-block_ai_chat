@@ -92,12 +92,45 @@ define(['local_ai_manager/infobox', 'local_ai_manager/warningbox'], function(Inf
     }
 
     /**
+     * Mausrad im Chatfenster nicht an die Kursseite weitergeben (17.11.2026): Scrollt kein Bereich zwischen Mauszeiger und Fenster
+     * mehr in diese Richtung (Ende des Verlaufs, Kopfzeile, Eingabefeld), wird das Scrollen der Seite verhindert.
+     *
+     * @param {HTMLElement} rahmen Das Chatfenster (.modal-content)
+     */
+    function scrollSperre(rahmen) {
+        if (rahmen.dataset.kichatScroll) {
+            return;
+        }
+        rahmen.dataset.kichatScroll = '1';
+        rahmen.addEventListener('wheel', function(e) {
+            var nachUnten = e.deltaY > 0;
+            for (var el = e.target; el && el !== rahmen.parentNode; el = el.parentElement) {
+                var stil = getComputedStyle(el);
+                var scrollbar = /(auto|scroll)/.test(stil.overflowY) && el.scrollHeight > el.clientHeight + 1;
+                if (scrollbar) {
+                    var kannWeiter = nachUnten ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0;
+                    if (kannWeiter) {
+                        return;   // Dieser Bereich scrollt selbst.
+                    }
+                }
+                if (el === rahmen) {
+                    break;
+                }
+            }
+            e.preventDefault();
+        }, {passive: false});
+    }
+
+    /**
      * Kleine Zeile unter dem Eingabefeld einbauen und beim ersten Öffnen den Hinweis zeigen.
      *
      * @param {HTMLElement} wrapper Der Eingabebereich (.block_ai_chat-input-wrapper)
      */
     function init(wrapper) {
         var rahmen = wrapper.closest('.modal-content') || wrapper.parentNode;
+        if (wrapper.closest('.modal-content')) {
+            scrollSperre(rahmen);
+        }
         if (!wrapper.querySelector('.kichat-ki-zeile')) {
             var zeile = document.createElement('div');
             zeile.className = 'kichat-ki-zeile';

@@ -587,3 +587,12 @@ body.block_ai_chat_replacehelp.block_ai_chat_chatwindow .block_ai_chat_modal:not
 #page-mod-quiz-summary #ai_chat_button {
     display: none !important;
 }
+
+/* Lokal (17.11.2026, Fehler gemeldet von der Nutzerin): Am Ende des Chatverlaufs scrollte das Mausrad die Kursseite darunter weiter
+   („scroll chaining“, das Chatfenster hat keinen abdeckenden Hintergrund). Scrollbereiche im Fenster geben das Scrollen nicht weiter;
+   amd/src/hinweis.js fängt zusätzlich das Mausrad über nicht scrollbaren Teilen des Fensters ab (Kopf, Eingabe). */
+.block_ai_chat_modal .block_ai_chat-output-wrapper,
+.block_ai_chat_modal .modal-body,
+.block_ai_chat_modal textarea {
+    overscroll-behavior: contain;
+}

@@ -29,6 +29,22 @@ class block_ai_chat_kurswissen_form extends moodleform {
         $m->setType('courseid', PARAM_INT);
         $m->addElement('filemanager', 'dateien', get_string('wissensdateien', 'block_ai_chat'), null, wissen::kursoptionen());
         $m->addHelpButton('dateien', 'kurswissen', 'block_ai_chat');
+        if (wissen::webmax() > 0) {
+            $m->addElement('textarea', 'weblinks', get_string('weblinks', 'block_ai_chat', wissen::webmax()),
+                ['rows' => 5, 'cols' => 70, 'placeholder' => 'https://…']);
+            $m->setType('weblinks', PARAM_RAW);
+            $m->addHelpButton('weblinks', 'weblinkshilfe', 'block_ai_chat');
+            if (!empty($this->_customdata['status'])) {
+                $zeilen = '';
+                foreach ($this->_customdata['status'] as $adresse => $anzahl) {
+                    $zeilen .= '<li style="overflow-wrap: anywhere;">' . ($anzahl > 0 ? '✅ ' : '⚠️ ') . s($adresse) . ' – '
+                        . ($anzahl > 0 ? get_string('weblinkok', 'block_ai_chat', $anzahl) : get_string('weblinkfehler', 'block_ai_chat'))
+                        . '</li>';
+                }
+                $m->addElement('static', 'weblinkstatus', '', '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">'
+                    . $zeilen . '</ul>');
+            }
+        }
         $this->add_action_buttons(true, get_string('savechanges'));
     }
 }
@@ -42,19 +58,19 @@ if (optional_param('erzeugen', 0, PARAM_BOOL) && confirm_sesskey()) {
     redirect($url, get_string('kurswissenerzeugt', 'block_ai_chat', count($dateien)), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 $vorschau = optional_param('vorschau', 0, PARAM_BOOL);
-$form = new block_ai_chat_kurswissen_form($url);
+$form = new block_ai_chat_kurswissen_form($url, ['status' => wissen::kurs_links($kurs)]);
 if ($form->is_cancelled()) {
     redirect($zurueck);
 }
 if ($daten = $form->get_data()) {
     core_php_time_limit::raise(300);
-    $anzahl = wissen::kurs_speichern($kurs, (int)$daten->dateien);
+    $anzahl = wissen::kurs_speichern($kurs, (int)$daten->dateien, isset($daten->weblinks) ? (string)$daten->weblinks : null);
     $namen = wissen::kurs_dateinamen($kurs);
     $text = $anzahl < 0 ? get_string('kurswissenunveraendert', 'block_ai_chat')
         : get_string('kurswissengespeichert', 'block_ai_chat', (object)['dateien' => count($namen), 'abschnitte' => $anzahl]);
     redirect($zurueck, $text, null, \core\output\notification::NOTIFY_SUCCESS);
 }
-$form->set_data(['courseid' => $courseid, 'dateien' => wissen::kurs_entwurf($kurs)]);
+$form->set_data(['courseid' => $courseid, 'dateien' => wissen::kurs_entwurf($kurs), 'weblinks' => wissen::kurs_links_text($kurs)]);
 
 echo $OUTPUT->header();
 // Kachelfarbe auch auf dieser Seite (format_tiles setzt die Variablen nur auf Kursseiten): Knöpfe und Rahmen wie im Kurs.

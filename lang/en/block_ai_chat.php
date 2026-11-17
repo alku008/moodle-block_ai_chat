@@ -175,3 +175,12 @@ $string['privacy:metadata:quellen'] = 'Which knowledge file sections were used f
 $string['privacy:metadata:quellen:logid'] = 'The request log entry of the answer.';
 $string['privacy:metadata:quellen:quellen'] = 'Titles of the knowledge file sections used.';
 $string['task_quellen_aufraeumen'] = 'Remove sources of deleted chat log entries';
+// Local extension: web pages as knowledge source.
+$string['task_weblinks'] = 'Refresh web pages of the AI chat knowledge sources';
+$string['weblinkfehler'] = 'not readable (not reachable, blocked or no text, e.g. pages that load their content with JavaScript)';
+$string['weblinkok'] = '{$a} sections';
+$string['weblinks'] = 'Web pages (one address per line, at most {$a})';
+$string['weblinkshilfe'] = 'Web pages';
+$string['weblinkshilfe_help'] = 'Moodle fetches these pages when saving and once a week, extracts their text and uses it like a knowledge file. This is not a web search: the AI only knows these pages. Pages that load their content with JavaScript (e.g. many Padlets, YouTube) or require a login cannot be read. PDF links work.';
+$string['weblinksmax'] = 'Web pages per course and per persona';
+$string['weblinksmaxdesc'] = 'Addresses whose text is used like a knowledge file (fetched with the cURL security settings of this site). 0 = off.';

@@ -87,6 +87,12 @@ class persona_form extends dynamic_form {
                 \block_ai_chat\local\wissen::personaoptionen());
             $mform->addHelpButton('wissensdateien', 'personawissen', 'block_ai_chat');
         }
+        if (\block_ai_chat\local\wissen::webmax() > 0) {
+            $mform->addElement('textarea', 'weblinks', get_string('weblinks', 'block_ai_chat', \block_ai_chat\local\wissen::webmax()),
+                ['rows' => 4, 'placeholder' => 'https://…']);
+            $mform->setType('weblinks', PARAM_RAW);
+            $mform->addHelpButton('weblinks', 'weblinkshilfe', 'block_ai_chat');
+        }
 
         $mform->addElement('textarea', 'userinfo', get_string('userinfo', 'block_ai_chat'));
         $mform->setType('userinfo', PARAM_TEXT);
@@ -190,8 +196,10 @@ class persona_form extends dynamic_form {
 
         $manager = new manager($this->contextid, $this->component);
         $ergebnis = $manager->edit_persona($personadata, $USER->id);
-        if (isset($formdata->wissensdateien)) {
-            \block_ai_chat\local\wissen::persona_speichern((int)$formdata->personaid, (int)$formdata->wissensdateien);
+        if (isset($formdata->wissensdateien) || isset($formdata->weblinks)) {
+            \core_php_time_limit::raise(300);
+            \block_ai_chat\local\wissen::persona_speichern((int)$formdata->personaid, (int)($formdata->wissensdateien ?? 0),
+                isset($formdata->weblinks) ? (string)$formdata->weblinks : null);
         }
         return $ergebnis;
     }
@@ -214,6 +222,7 @@ class persona_form extends dynamic_form {
         ];
         $data['prompt'] = ['text' => $personarecord->prompt, 'format' => FORMAT_HTML];
         $data['wissensdateien'] = \block_ai_chat\local\wissen::persona_entwurf((int)$personarecord->id);
+        $data['weblinks'] = \block_ai_chat\local\wissen::persona_links_text((int)$personarecord->id);
 
         $this->set_data($data);
     }

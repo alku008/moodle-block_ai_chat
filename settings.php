@@ -75,6 +75,8 @@ if ($hassiteconfig) {
             new lang_string('personamaxfiles', 'block_ai_chat'), new lang_string('personamaxfilesdesc', 'block_ai_chat'), 5, PARAM_INT));
         $settings->add(new admin_setting_configtext('block_ai_chat/wissenmaxbytes',
             new lang_string('wissenmaxbytes', 'block_ai_chat'), '', 5, PARAM_INT));
+        $settings->add(new admin_setting_configtext('block_ai_chat/weblinksmax',
+            new lang_string('weblinksmax', 'block_ai_chat'), new lang_string('weblinksmaxdesc', 'block_ai_chat'), 5, PARAM_INT));
         $settings->add(
             new admin_setting_configtext(
                 'block_ai_chat/embeddingmodel',

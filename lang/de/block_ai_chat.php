@@ -50,3 +50,12 @@ $string['privacy:metadata:quellen'] = 'Welche Abschnitte der Wissensdateien für
 $string['privacy:metadata:quellen:logid'] = 'Der Protokolleintrag der Antwort.';
 $string['privacy:metadata:quellen:quellen'] = 'Titel der verwendeten Abschnitte.';
 $string['task_quellen_aufraeumen'] = 'Quellen gelöschter Chat-Protokolleinträge entfernen';
+// Lokale Erweiterung: Webseiten als Wissensquelle.
+$string['task_weblinks'] = 'Webseiten der KI-Chat-Wissensquellen aktualisieren';
+$string['weblinkfehler'] = 'nicht lesbar (nicht erreichbar, gesperrt oder ohne Text, z. B. Seiten, die ihren Inhalt per JavaScript laden)';
+$string['weblinkok'] = '{$a} Abschnitte';
+$string['weblinks'] = 'Webseiten (eine Adresse pro Zeile, höchstens {$a})';
+$string['weblinkshilfe'] = 'Webseiten';
+$string['weblinkshilfe_help'] = 'Moodle ruft diese Seiten beim Speichern und einmal pro Woche ab, nimmt den Text heraus und nutzt ihn wie eine Wissensdatei. Das ist keine Websuche: Die KI kennt nur diese Seiten. Seiten, die ihren Inhalt per JavaScript laden (z. B. viele Padlets, YouTube) oder eine Anmeldung brauchen, sind nicht lesbar. PDF-Links funktionieren.';
+$string['weblinksmax'] = 'Webseiten pro Kurs und pro Persona';
+$string['weblinksmaxdesc'] = 'Adressen, deren Text wie eine Wissensdatei genutzt wird (abgerufen mit den cURL-Sicherheitseinstellungen dieser Website). 0 = aus.';

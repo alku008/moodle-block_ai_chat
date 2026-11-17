@@ -90,7 +90,169 @@ class wissen {
     }
 
     private static function fingerabdruck(array $b): string {
-        return implode('|', array_map(fn($d) => $d->get_filename() . ':' . $d->get_contenthash(), self::dateien($b)));
+        return implode('|', array_map(fn($d) => $d->get_filename() . ':' . $d->get_contenthash(), self::dateien($b)))
+            . '|' . implode('|', self::links($b));
+    }
+
+    // ---- Webseiten als Wissen (17.11.2026, Wunsch der Nutzerin) ----
+    // Bis zu „weblinksmax“ Adressen je Kurs bzw. Persona. Moodle ruft die Seiten beim Speichern (und wöchentlich, Aufgabe
+    // weblinks_aktualisieren) über seine cURL-Klasse ab – mit den Sperrlisten der Website, also keine internen Adressen –,
+    // nimmt den Text heraus und zerlegt ihn wie eine Wissensdatei. Keine freie Websuche: Die KI kennt nur diese Seiten.
+    // Ablage: Kurs = configdata des KI-Chat-Blocks (reist mit Sicherungen mit), Persona = Einstellung personalinks_<id>.
+
+    /** Höchstens so viele Webseiten pro Kurs bzw. Persona (Einstellung weblinksmax, Standard 5, 0 = aus). */
+    public static function webmax(): int {
+        $wert = get_config('block_ai_chat', 'weblinksmax');
+        return $wert === false || $wert === '' ? 5 : max(0, (int)$wert);
+    }
+
+    /** Text (eine Adresse pro Zeile) → gültige http(s)-Adressen, ohne Doppelte, höchstens webmax(). */
+    public static function links_lesen(string $text): array {
+        $liste = [];
+        foreach (preg_split('/\s+/', trim($text)) as $zeile) {
+            $url = clean_param(trim($zeile), PARAM_URL);
+            if ($url !== '' && preg_match('#^https?://[^/\s]+#i', $url) && \core_text::strlen($url) <= 255) {
+                $liste[$url] = true;
+            }
+        }
+        return array_slice(array_keys($liste), 0, self::webmax());
+    }
+
+    /** Gespeicherte Adressen eines Bereichs. */
+    private static function links(array $b): array {
+        if (self::webmax() === 0) {
+            return [];
+        }
+        if ($b[3]['personaid'] > 0) {
+            return self::links_lesen((string)get_config('block_ai_chat', 'personalinks_' . $b[3]['personaid']));
+        }
+        $ctx = \context::instance_by_id($b[0], IGNORE_MISSING);
+        if ($ctx instanceof \context_block) {
+            global $DB;
+            $cd = $DB->get_field('block_instances', 'configdata', ['id' => $ctx->instanceid]);
+            $config = $cd ? unserialize_object(base64_decode($cd)) : new \stdClass();
+            return self::links_lesen((string)($config->weblinks ?? ''));
+        }
+        return self::links_lesen((string)get_config('block_ai_chat', 'kurslinks_' . $b[3]['contextid']));
+    }
+
+    /** Adressen eines Bereichs speichern (ohne neu zu zerlegen). */
+    private static function links_setzen(array $b, string $text): void {
+        global $DB;
+        $wert = implode("\n", self::links_lesen($text));
+        if ($b[3]['personaid'] > 0) {
+            set_config('personalinks_' . $b[3]['personaid'], $wert === '' ? null : $wert, 'block_ai_chat');
+            return;
+        }
+        $ctx = \context::instance_by_id($b[0], IGNORE_MISSING);
+        if ($ctx instanceof \context_block) {
+            $cd = $DB->get_field('block_instances', 'configdata', ['id' => $ctx->instanceid]);
+            $config = $cd ? unserialize_object(base64_decode($cd)) : new \stdClass();
+            $config->weblinks = $wert;
+            $DB->set_field('block_instances', 'configdata', base64_encode(serialize($config)), ['id' => $ctx->instanceid]);
+            return;
+        }
+        set_config('kurslinks_' . $b[3]['contextid'], $wert === '' ? null : $wert, 'block_ai_chat');
+    }
+
+    /**
+     * Eine Webseite abrufen: ['titel' => …, 'text' => …] oder null (nicht erreichbar, gesperrt, kein lesbarer Text).
+     * HTML: Hauptinhalt (main/article, sonst body) ohne Skripte, Navigation, Kopf- und Fußzeilen; Überschriften bleiben als „#“.
+     */
+    public static function webseite(string $url): ?array {
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
+        $curl = new \curl();   // mit den cURL-Sperrlisten der Website (keine internen Adressen)
+        $inhalt = $curl->get($url, [], ['CURLOPT_TIMEOUT' => 20, 'CURLOPT_CONNECTTIMEOUT' => 5, 'CURLOPT_FOLLOWLOCATION' => true,
+            'CURLOPT_MAXREDIRS' => 3, 'CURLOPT_USERAGENT' => 'Moodle KI-Chat (Wissensquelle)']);
+        $info = $curl->get_info();
+        if ($curl->get_errno() || (int)($info['http_code'] ?? 0) >= 400 || !is_string($inhalt) || $inhalt === ''
+                || strlen($inhalt) > 10 * 1024 * 1024) {
+            return null;
+        }
+        $typ = strtolower((string)($info['content_type'] ?? ''));
+        $titel = preg_replace('#^https?://(www\.)?#i', '', $url);
+        if (strpos($typ, 'pdf') !== false || strpos($inhalt, '%PDF-') === 0) {
+            $text = self::pdf_aus_inhalt($inhalt);
+        } else if (strpos($typ, 'html') !== false || preg_match('/<html|<body/i', substr($inhalt, 0, 2000))) {
+            if (preg_match('#<title[^>]*>(.*?)</title>#si', $inhalt, $m)) {
+                $titel = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?: $titel;
+            }
+            $html = preg_replace('#<(script|style|noscript|nav|header|footer|aside|form|svg|iframe)\b.*?</\1>#si', ' ', $inhalt);
+            if (preg_match('#<(main|article)\b[^>]*>(.*)</\1>#si', $html, $m)) {
+                $html = $m[2];
+            } else if (preg_match('#<body\b[^>]*>(.*)</body>#si', $html, $m)) {
+                $html = $m[1];
+            }
+            $html = preg_replace_callback('#<h([1-3])\b[^>]*>(.*?)</h\1>#si', fn($h) => '<p>' . str_repeat('#', (int)$h[1]) . ' '
+                . trim(strip_tags($h[2])) . '</p>', $html);
+            $text = html_to_text($html, 0, false);
+        } else if (strpos($typ, 'text/') === 0 || $typ === '') {
+            $text = $inhalt;
+        } else {
+            return null;
+        }
+        $text = trim(preg_replace("/\n{3,}/", "\n\n", (string)$text));
+        if (\core_text::strlen($text) < 50) {
+            return null;
+        }
+        return ['titel' => \core_text::substr($titel, 0, 120), 'text' => \core_text::substr($text, 0, 200000)];
+    }
+
+    /** Für die Anzeige: je Adresse die Zahl der gespeicherten Abschnitte (0 = nicht lesbar). */
+    public static function link_status(array $b): array {
+        global $DB;
+        $status = [];
+        foreach (self::links($b) as $url) {
+            $status[$url] = $DB->count_records(self::TABELLE, $b[3] + ['filename' => $url]);
+        }
+        return $status;
+    }
+
+    public static function kurs_links(\context_course $kurs): array {
+        return self::link_status(self::bereich($kurs));
+    }
+
+    public static function persona_links_text(int $personaid): string {
+        return implode("\n", self::links(self::bereich(null, $personaid)));
+    }
+
+    public static function kurs_links_text(\context_course $kurs): string {
+        return implode("\n", self::links(self::bereich($kurs)));
+    }
+
+    /** Fingerabdruck der abgerufenen Seiten (für die wöchentliche Aktualisierung: nur bei Änderungen neu zerlegen). */
+    public static function web_fingerabdruck(array $b): string {
+        $teile = [];
+        foreach (self::links($b) as $url) {
+            $seite = self::webseite($url);
+            $teile[] = $url . ':' . ($seite ? sha1($seite['text']) : '-');
+        }
+        return sha1(implode('|', $teile));
+    }
+
+    /** Bereich für die Aufgabe weblinks_aktualisieren. */
+    public static function bereich_kurs(\context_course $kurs): array {
+        return self::bereich($kurs);
+    }
+
+    public static function bereich_persona(int $personaid): array {
+        return self::bereich(null, $personaid);
+    }
+
+    /** Neu zerlegen, wenn sich die Webseiten eines Bereichs geändert haben; gibt true zurück, wenn neu zerlegt wurde. */
+    public static function web_aktualisieren(array $b): bool {
+        if (!self::links($b)) {
+            return false;
+        }
+        $schluessel = 'webhash_' . ($b[3]['personaid'] > 0 ? 'p' . $b[3]['personaid'] : 'k' . $b[3]['contextid']);
+        $neu = self::web_fingerabdruck($b);
+        if ($neu === get_config('block_ai_chat', $schluessel)) {
+            return false;
+        }
+        self::zerlegen($b);
+        set_config($schluessel, $neu, 'block_ai_chat');
+        return true;
     }
 
     private static function entwurf(array $b, array $optionen): int {
@@ -99,8 +261,11 @@ class wissen {
         return $draftitemid;
     }
 
-    private static function speichern(array $b, int $draftitemid, array $optionen): int {
+    private static function speichern(array $b, int $draftitemid, array $optionen, ?string $links = null): int {
         $vorher = self::fingerabdruck($b);
+        if ($links !== null) {
+            self::links_setzen($b, $links);
+        }
         file_save_draft_area_files($draftitemid, $b[0], 'block_ai_chat', $b[1], $b[2], $optionen);
         return self::fingerabdruck($b) !== $vorher ? self::zerlegen($b) : -1;
     }
@@ -111,8 +276,8 @@ class wissen {
     }
 
     /** Speichern und neu zerlegen; gibt die Zahl der Abschnitte zurück (-1 = unverändert). */
-    public static function kurs_speichern(\context_course $kurs, int $draftitemid): int {
-        return self::speichern(self::bereich($kurs), $draftitemid, self::kursoptionen());
+    public static function kurs_speichern(\context_course $kurs, int $draftitemid, ?string $links = null): int {
+        return self::speichern(self::bereich($kurs), $draftitemid, self::kursoptionen(), $links);
     }
 
     public static function kurs_dateinamen(\context_course $kurs): array {
@@ -128,8 +293,8 @@ class wissen {
         return self::entwurf(self::bereich(null, $personaid), self::personaoptionen());
     }
 
-    public static function persona_speichern(int $personaid, int $draftitemid): int {
-        return self::speichern(self::bereich(null, $personaid), $draftitemid, self::personaoptionen());
+    public static function persona_speichern(int $personaid, int $draftitemid, ?string $links = null): int {
+        return self::speichern(self::bereich(null, $personaid), $draftitemid, self::personaoptionen(), $links);
     }
 
     public static function persona_zerlegen(int $personaid): int {
@@ -142,6 +307,9 @@ class wissen {
         $fs = get_file_storage();
         foreach (self::dateien(self::bereich(null, $vonid)) as $datei) {
             $fs->create_file_from_storedfile(['itemid' => $nachid], $datei);
+        }
+        if ($links = get_config('block_ai_chat', 'personalinks_' . $vonid)) {
+            set_config('personalinks_' . $nachid, $links, 'block_ai_chat');
         }
         foreach ($DB->get_records(self::TABELLE, ['personaid' => $vonid, 'contextid' => 0]) as $r) {
             unset($r->id);
@@ -156,6 +324,8 @@ class wissen {
         $b = self::bereich(null, $personaid);
         get_file_storage()->delete_area_files($b[0], 'block_ai_chat', $b[1], $b[2]);
         $DB->delete_records(self::TABELLE, ['personaid' => $personaid, 'contextid' => 0]);
+        unset_config('personalinks_' . $personaid, 'block_ai_chat');
+        unset_config('webhash_p' . $personaid, 'block_ai_chat');
     }
 
     /** Dateien eines Bereichs zerlegen, Embeddings berechnen, Abschnitte speichern. */
@@ -169,6 +339,19 @@ class wissen {
             foreach (self::abschnitte(self::text($datei)) as $text) {
                 $abschnitte[] = (object)($b[3] + ['filename' => $datei->get_filename(), 'chunkno' => $nr++,
                     'content' => $text, 'embedding' => null, 'model' => '', 'timecreated' => time()]);
+            }
+        }
+        foreach (self::links($b) as $url) {
+            $seite = self::webseite($url);
+            if (!$seite) {
+                continue;
+            }
+            $nr = 0;
+            foreach (self::abschnitte($seite['text']) as $text) {
+                // Titel der Seite vorn (Quelle), Überschriften der Seite bleiben dahinter.
+                $abschnitte[] = (object)($b[3] + ['filename' => $url, 'chunkno' => $nr++,
+                    'content' => '[🌐 ' . str_replace([']', '['], ')', $seite['titel']) . "]\n" . $text, 'embedding' => null, 'model' => '',
+                    'timecreated' => time()]);
             }
         }
         if (!$abschnitte) {
@@ -241,6 +424,11 @@ class wissen {
 
     /** PDF-Text über den mitgelieferten PDF-Leser (leer, wenn die Datei nicht lesbar ist). */
     private static function pdftext(\stored_file $datei): string {
+        return self::pdf_aus_inhalt($datei->get_content());
+    }
+
+    /** PDF-Text aus dem Inhalt einer PDF-Datei. */
+    private static function pdf_aus_inhalt(string $inhalt): string {
         raise_memory_limit(MEMORY_EXTRA);
         \core_php_time_limit::raise(120);
         // Mitgelieferter PDF-Leser in reinem PHP (smalot/pdfparser 2.13.1, LGPL-3.0), Seite für Seite.
@@ -256,7 +444,7 @@ class wissen {
         try {
             $konfig = new \Smalot\PdfParser\Config();
             $konfig->setRetainImageContent(false);
-            $pdf = (new \Smalot\PdfParser\Parser([], $konfig))->parseContent($datei->get_content());
+            $pdf = (new \Smalot\PdfParser\Parser([], $konfig))->parseContent($inhalt);
             $seiten = [];
             foreach ($pdf->getPages() as $nr => $seite) {
                 $seiten[] = '# Seite ' . ($nr + 1) . "\n\n" . trim($seite->getText());
@@ -444,13 +632,15 @@ class wissen {
                 break;
             }
             $zeichen += \core_text::strlen($a->content);
-            $auszuege[] = '--- Aus der Datei „' . $a->filename . '“ ---' . "\n" . $a->content;
+            $web = preg_match('#^https?://#i', $a->filename);
+            $auszuege[] = ($web ? '--- Von der Webseite ' . $a->filename . ' ---' : '--- Aus der Datei „' . $a->filename . '“ ---')
+                . "\n" . $a->content;
             $titel = preg_match('/^\[([^\]]*)\]/u', $a->content, $tm) ? $tm[1] : pathinfo($a->filename, PATHINFO_FILENAME);
             $teile = explode(' › ', $titel);
             if (count($teile) === 2 && strpos($teile[1], $teile[0]) === 0) {
                 $titel = $teile[1];   // „Lernpfad 8: Dictionaries › Lernpfad 8: Dictionaries – Worum“ → nur der zweite Teil
             }
-            self::$quellen[$titel] = true;
+            self::$quellen[$titel . ($web ? "\t" . $a->filename : '')] = true;   // Webseite: Titel + Tab + Adresse (Link)
         }
         return "\n\n## Wissensdateien\nDie Lehrkraft hat dir Wissensdateien gegeben. Hier sind die Auszüge, die am besten zur aktuellen Frage passen. "
             . "Nutze sie für deine Antwort und nenne bei Bedarf die Datei bzw. Aufgabe. Wenn die Auszüge nicht zur Frage passen, sag das "
@@ -477,20 +667,27 @@ class wissen {
         // Kurz halten (Wunsch der Nutzerin, 17.11.2026): nur der Lernpfad bzw. die Kachel, ohne Notebook- und Abschnittstitel.
         $kurz = [];
         foreach ($liste as $titel) {
+            [$titel, $url] = explode("\t", $titel, 2) + [1 => ''];
             $t = trim(preg_replace('/\s+[–-]\s+.*$/u', '', explode(' › ', $titel)[0]));
             $t = preg_replace('/\s*\(🕒[^)]*\)/u', '', $t);
-            if ($t !== '') {
-                $kurz[$t] = true;
+            if ($t !== '' && !isset($kurz[$t])) {
+                $kurz[$t] = $url;
             }
         }
-        // Eine Quelle pro Zeile (Wunsch der Nutzerin, 17.11.2026), höchstens drei.
-        $kurz = array_slice(array_keys($kurz), 0, 3);
+        // Eine Quelle pro Zeile (Wunsch der Nutzerin, 17.11.2026), höchstens drei; Webseiten als Link (neuer Tab).
+        $kurz = array_slice($kurz, 0, 3, true);
+        $html = [];
+        foreach ($kurz as $t => $url) {
+            $html[] = ($url !== '' && preg_match('#^https?://#i', $url))
+                ? '<a href="' . s($url) . '" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">' . s($t) . '</a>'
+                : s($t);
+        }
         $stil = 'font-size: 0.75rem; color: #8a939c; margin-top: 6px; line-height: 1.35;';
-        if (count($kurz) === 1) {
-            return '<div class="kichat-quellen" style="' . $stil . '">📚 Quelle: ' . s($kurz[0]) . '</div>';
+        if (count($html) === 1) {
+            return '<div class="kichat-quellen" style="' . $stil . '">📚 Quelle: ' . $html[0] . '</div>';
         }
         return '<div class="kichat-quellen" style="' . $stil . '">📚 Quellen:<ul style="margin: 2px 0 0 0; padding-left: 1.4rem;">'
-            . implode('', array_map(fn($t) => '<li style="margin: 0;">' . s($t) . '</li>', $kurz)) . '</ul></div>';
+            . implode('', array_map(fn($t) => '<li style="margin: 0;">' . $t . '</li>', $html)) . '</ul></div>';
     }
 
     private static function kosinus(array $a, ?array $b): float {

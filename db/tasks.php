@@ -33,4 +33,13 @@ $tasks = [
         'month' => '*',
         'dayofweek' => '*',
     ],
+    [
+        'classname' => 'block_ai_chat\task\weblinks_aktualisieren',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => '4',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '0',
+    ],
 ];

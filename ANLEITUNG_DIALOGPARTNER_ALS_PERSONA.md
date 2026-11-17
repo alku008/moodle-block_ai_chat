@@ -18,10 +18,11 @@ Test-Sperre des KI-Kontrollzentrums. Die Kosten trägt die Schule (Schlüssel im
 | Instruktionen / Systemprompt | Persona → **Prompt** |
 | Begrüßung, Einstiegsfrage | im **Prompt** als Satz: „Beginne das Gespräch mit: …“ |
 | Wissensdateien (bis 5) | Persona → **Wissensdateien dieser Persona** (gilt in allen Kursen mit dieser Persona) **oder** KI-Kontrollzentrum → **📚 Wissen für den KI-Chat** (gilt nur in diesem Kurs) |
+| Webseiten | Persona → **Webseiten** (bis 5 Adressen, alle Kurse) oder KI-Kontrollzentrum → **Dateien und Webseiten verwalten** (nur dieser Kurs) |
 | Sprachmodell | KI-Kontrollzentrum → **🧠 KI-Modell für diesen Kurs** (nur wenn die Administration Modelle freigegeben hat), sonst die Vorgabe der Schule |
 | Promptvorschläge | Start- und Folgevorschläge legt die Administration für alle fest (Einstellungen des KI-Chats) |
 | Link mit Code teilen | entfällt: Die Persona gilt für alle im Kurs |
-| Websuche, Sprachausgabe, Bilder | gibt es im KI-Chat nicht |
+| Websuche, Sprachausgabe, Bilder | gibt es im KI-Chat nicht (Webseiten nur als feste Liste, siehe oben) |
 
 Erlaubte Dateitypen für Wissensdateien: txt, md, ipynb, py, html, csv, docx, pdf (Standard: bis 5 Dateien zu je 5 MB).
 
@@ -39,8 +40,11 @@ Du brauchst das Recht, den KI-Chat zu bearbeiten (Lehrkräfte im Kurs).
    „Beginne das Gespräch mit: Hallo! Ich bin dein Python-Lerncoach. Woran arbeitest du gerade?“
 5. **Wissensdateien dieser Persona:** die Dateien des Dialogpartners hineinziehen. Sie gelten dann in **allen Kursen**, in denen
    die Persona gewählt ist. Gehören die Dateien nur zu einem Kurs, lass das Feld leer und nimm Schritt 4.
-6. **Info, die dem Nutzer angezeigt wird:** die Kurzbeschreibung, z. B. „Hilft dir bei den Notebooks – mit Tipps, nicht mit fertigen Lösungen.“
-7. **Speichern.** Die Dateien werden dabei zerlegt und für die Suche vorbereitet. Das dauert bei großen Dateien einen Moment.
+6. **Webseiten** (optional): bis zu 5 Adressen, eine pro Zeile. Moodle liest ihren Text und nutzt ihn wie eine Wissensdatei; die
+   Quellenzeile verlinkt die Seite. Seiten, die ihren Inhalt erst per JavaScript laden (viele Padlets, YouTube) oder eine Anmeldung
+   brauchen, sind nicht lesbar – im Kontrollzentrum steht dann ⚠️.
+7. **Info, die dem Nutzer angezeigt wird:** die Kurzbeschreibung, z. B. „Hilft dir bei den Notebooks – mit Tipps, nicht mit fertigen Lösungen.“
+8. **Speichern.** Dateien und Webseiten werden dabei zerlegt und für die Suche vorbereitet. Das dauert bei großen Dateien einen Moment.
 
 Die Persona steht dann unter **Meine Personas**. Personas für die ganze Schule (**Globale Vorlagen**) kann nur die Administration anlegen.
 
@@ -51,7 +55,8 @@ Im Bearbeitungsmodus: **KI-Kontrollzentrum → ⚙️ Weitere KI-Einstellungen �
 
 ## 4. Kurs-Wissensdateien (optional)
 
-**KI-Kontrollzentrum → 📚 Wissen für den KI-Chat → Dateien verwalten.** Diese Dateien gelten nur in diesem Kurs, für jede Persona.
+**KI-Kontrollzentrum → 📚 Wissen für den KI-Chat → Dateien und Webseiten verwalten.** Diese Dateien und Webseiten gelten nur in diesem
+Kurs, für jede Persona. Unter den Webseiten steht, ob Moodle sie lesen konnte (✅ Zahl der Abschnitte bzw. ⚠️ nicht lesbar).
 Bei jeder Frage sucht der Chat die passenden Abschnitte aus Persona- und Kurs-Dateien heraus. Unter jeder Antwort steht, woraus
 er geschöpft hat („📚 Quelle: …“).
 
@@ -70,6 +75,6 @@ und prüfe die Antwort und die Quellenzeile.
 - **Dateien gut gliedern:** Überschriften (`#`, `##`) und Aufgabennummern („Aufgabe 3“) helfen der Suche. Eine Frage wie „Ich hänge bei
   Aufgabe 3“ findet dann genau den richtigen Abschnitt.
 - **Lieber wenige, gebündelte Dateien** als viele kleine: Es gibt höchstens 5 Dateien je Persona bzw. Kurs.
-- **Prompt kurz prüfen:** Hinweise auf AIS.chat-Funktionen, die es in Moodle nicht gibt (Websuche, Bilder, „lade eine Datei hoch“), streichen.
+- **Prompt kurz prüfen:** Hinweise auf AIS.chat-Funktionen, die es in Moodle nicht gibt (freie Websuche, Bilder), streichen.
   Dateien anhängen können die Lernenden im Chat trotzdem: mit 📎 (Text-, Code- und Notebook-Dateien).
 - **Du-Anrede:** Steht im Prompt „Sprich die Person immer mit du an“, bleibt die KI dabei.

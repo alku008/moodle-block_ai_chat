@@ -49,9 +49,17 @@ define(['local_ai_manager/infobox', 'local_ai_manager/warningbox'], function(Inf
         titel.textContent = '🤖 Bevor du startest';
         var liste = document.createElement('ul');
         liste.style.cssText = 'margin: 0 0 10px 0; padding-left: 1.2rem;';
-        ['Deine Eingaben gehen an ein externes KI-System.',
+        var punkte = ['Deine Eingaben gehen an ein externes KI-System.',
             'Gib keine persönlichen Daten ein – keine Namen, Adressen, Noten oder Fotos von Personen.',
-            'Die KI kann Fehler machen. Prüfe die Antworten, bevor du sie verwendest.'].forEach(function(t) {
+            'Die KI kann Fehler machen. Prüfe die Antworten, bevor du sie verwendest.'];
+        // Ob Lehrkräfte die Fragen einsehen können, entscheidet die Administration (Recht „Nutzerprompts einsehen“).
+        var einsicht = (window.blockAiChatAnhang || {}).prompteinsicht;
+        if (einsicht === false) {
+            punkte.push('Deine Lehrkraft sieht nicht, was du die KI fragst. Du nutzt sie eigenverantwortlich.');
+        } else if (einsicht === true) {
+            punkte.push('Deine Lehrkraft kann einsehen, was du die KI fragst.');
+        }
+        punkte.forEach(function(t) {
             var li = document.createElement('li');
             li.textContent = t;
             li.style.margin = '3px 0';

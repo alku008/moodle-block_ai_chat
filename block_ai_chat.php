@@ -95,8 +95,15 @@ class block_ai_chat extends block_base {
         $aioutput = $this->page->get_renderer('block_ai_chat');
         $this->content->text = $aioutput->render_ai_chat_content($this);
         // Lokal (15.11.2026): Einstellungen für den 📎-Knopf (amd/src/anhang.js).
+        // Lokal (17.11.2026): Können Lehrkräfte dieses Kurses die Fragen einsehen (Recht local/ai_manager:viewprompts)? Der Hinweis
+        // beim ersten Öffnen sagt es den Lernenden offen – die Administration kann das Recht den Lehrkräften-Rollen entziehen.
+        $jsconfig = \block_ai_chat\local\anhang::jsconfig();
+        $kurskontext = $this->context->get_course_context(false);
+        if ($kurskontext && $kurskontext->instanceid != SITEID) {
+            $jsconfig['prompteinsicht'] = (bool)get_users_by_capability($kurskontext, 'local/ai_manager:viewprompts', 'u.id', '', 0, 1);
+        }
         $this->page->requires->js_init_code('window.blockAiChatAnhang = '
-            . json_encode(\block_ai_chat\local\anhang::jsconfig(), JSON_HEX_TAG | JSON_HEX_AMP) . ';');
+            . json_encode($jsconfig, JSON_HEX_TAG | JSON_HEX_AMP) . ';');
         // Lokal (17.11.2026): Start- und Folgevorschläge (amd/src/vorschlaege.js).
         $this->page->requires->js_init_code('window.blockAiChatVorschlaege = '
             . json_encode(\block_ai_chat\local\anhang::vorschlaege(), JSON_HEX_TAG | JSON_HEX_AMP) . ';');

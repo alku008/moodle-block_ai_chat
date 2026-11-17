@@ -429,7 +429,7 @@ class wissen {
         if (!$liste) {
             return '';
         }
-        // Kurz halten (Wunsch der Nutzerin, 17.11.2026): nur der Lernpfad bzw. die Kachel, ohne Notebook- und Abschnittstitel, höchstens zwei.
+        // Kurz halten (Wunsch der Nutzerin, 17.11.2026): nur der Lernpfad bzw. die Kachel, ohne Notebook- und Abschnittstitel.
         $kurz = [];
         foreach ($liste as $titel) {
             $t = trim(preg_replace('/\s+[–-]\s+.*$/u', '', explode(' › ', $titel)[0]));
@@ -438,9 +438,14 @@ class wissen {
                 $kurz[$t] = true;
             }
         }
-        $kurz = array_slice(array_keys($kurz), 0, 2);
-        return '<div class="kichat-quellen" style="font-size: 0.75rem; color: #8a939c; margin-top: 6px;">📚 '
-            . implode(', ', array_map('s', $kurz)) . '</div>';
+        // Eine Quelle pro Zeile (Wunsch der Nutzerin, 17.11.2026), höchstens drei.
+        $kurz = array_slice(array_keys($kurz), 0, 3);
+        $stil = 'font-size: 0.75rem; color: #8a939c; margin-top: 6px; line-height: 1.35;';
+        if (count($kurz) === 1) {
+            return '<div class="kichat-quellen" style="' . $stil . '">📚 Quelle: ' . s($kurz[0]) . '</div>';
+        }
+        return '<div class="kichat-quellen" style="' . $stil . '">📚 Quellen:<ul style="margin: 2px 0 0 0; padding-left: 1.4rem;">'
+            . implode('', array_map(fn($t) => '<li style="margin: 0;">' . s($t) . '</li>', $kurz)) . '</ul></div>';
     }
 
     private static function kosinus(array $a, ?array $b): float {

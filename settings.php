@@ -106,8 +106,15 @@ if ($hassiteconfig) {
             $zeilen[] = html_writer::tag('li', html_writer::link(new moodle_url('/admin/roles/define.php',
                 ['action' => 'edit', 'roleid' => $rolle->id]), role_get_name($rolle)) . ': ' . $stand);
         }
-        $settings->add(new admin_setting_heading('block_ai_chat/prompteinsicht', new lang_string('prompteinsicht', 'block_ai_chat'),
-            get_string('prompteinsichtdesc', 'block_ai_chat') . html_writer::tag('ul', implode('', $zeilen))));
+        // Als abgesetzter, farbiger Kasten mit Linien oben und unten (Wunsch der Nutzerin, 17.11.2026).
+        $linie = '<hr style="border: 0; border-top: 1px solid #d5dbe3; opacity: 1; margin: 1.5em 0;">';
+        $settings->add(new admin_setting_heading('block_ai_chat/prompteinsicht', '', $linie
+            . '<div style="background: #f7f9fc; border: 1px solid #e3e8ef; border-left: 4px solid #9fb3c8; border-radius: 6px; '
+            . 'padding: 14px 18px;">'
+            . '<h4 style="margin: 0 0 8px 0; font-size: 1.05rem;">' . get_string('prompteinsicht', 'block_ai_chat') . '</h4>'
+            . '<div>' . get_string('prompteinsichtdesc', 'block_ai_chat') . '</div>'
+            . html_writer::tag('ul', implode('', $zeilen), ['style' => 'margin: 8px 0 0 0;'])
+            . '</div>' . $linie));
         $settings->add(new admin_setting_configtextarea('block_ai_chat/grundanweisung',
             new lang_string('grundanweisung', 'block_ai_chat'), new lang_string('grundanweisungdesc', 'block_ai_chat'), ''));
         $settings->add(new admin_setting_configtextarea('block_ai_chat/startvorschlaege',

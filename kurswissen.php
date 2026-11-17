@@ -34,12 +34,14 @@ class block_ai_chat_kurswissen_form extends moodleform {
 }
 
 $zurueck = new moodle_url('/course/view.php', ['id' => $courseid]);
-// Lokal (17.11.2026): Wissensdateien aus den Kursinhalten erzeugen (ersetzt die bisherigen Dateien).
+// Lokal (17.11.2026): Wissensdateien aus den Kursinhalten erzeugen – erst Vorschau mit Häkchen, dann erzeugen (ersetzt die Dateien).
 if (optional_param('erzeugen', 0, PARAM_BOOL) && confirm_sesskey()) {
     core_php_time_limit::raise(300);
-    $dateien = \block_ai_chat\local\kursinhalte::erzeugen($kurs);
+    $auswahl = optional_param_array('auswahl', [], PARAM_INT);
+    $dateien = \block_ai_chat\local\kursinhalte::erzeugen($kurs, $auswahl);
     redirect($url, get_string('kurswissenerzeugt', 'block_ai_chat', count($dateien)), null, \core\output\notification::NOTIFY_SUCCESS);
 }
+$vorschau = optional_param('vorschau', 0, PARAM_BOOL);
 $form = new block_ai_chat_kurswissen_form($url);
 if ($form->is_cancelled()) {
     redirect($zurueck);
@@ -65,6 +67,34 @@ if (!empty($optionen['basecolour']) && preg_match('/^#?([0-9a-f]{6})$/i', $optio
         . ' #region-main .btn-primary:hover { filter: brightness(0.88); }</style>';
 }
 echo $OUTPUT->heading('📚 ' . $titel);
+if ($vorschau) {
+    // Vorschau: alle Inhalte nach Kacheln mit Häkchen; nicht vorausgewählte mit Grund.
+    $kandidaten = \block_ai_chat\local\kursinhalte::kandidaten($kurs);
+    echo html_writer::div(get_string('kurswissenvorschauinfo', 'block_ai_chat'), '',
+        ['style' => 'margin-bottom: 14px; padding: 10px 12px; border-left: 4px solid var(--format-tiles-colour, #0f6cbf); background: #f8fafd; border-radius: 6px;']);
+    echo '<form method="post" action="' . $url->out() . '">';
+    echo '<input type="hidden" name="sesskey" value="' . sesskey() . '"><input type="hidden" name="erzeugen" value="1">';
+    foreach ($kandidaten as $nr => $kachel) {
+        echo '<fieldset style="border: 1px solid #d5dbe3; border-radius: 8px; padding: 8px 14px; margin: 0 0 10px 0;">'
+            . '<legend style="font-size: 1rem; font-weight: bold; width: auto; padding: 0 6px; margin: 0;">' . s($kachel['titel']) . '</legend>';
+        foreach ($kachel['eintraege'] as $cmid => $e) {
+            $id = 'auswahl' . $cmid;
+            echo '<div style="margin: 3px 0;"><input type="checkbox" name="auswahl[]" value="' . $cmid . '" id="' . $id . '"'
+                . ($e['auswahl'] ? ' checked' : '') . '> <label for="' . $id . '" style="display: inline;">' . s($e['name'])
+                . ' <span style="color: #6a737d; font-size: 0.85rem;">(' . s($e['art'])
+                . ($e['dateien'] ? ', ' . $e['dateien'] . ' Datei(en)' : '') . ')</span>'
+                . ($e['grund'] ? ' <span style="color: #a15c00; font-size: 0.85rem;">⚠️ ' . s($e['grund']) . '</span>' : '')
+                . '</label></div>';
+        }
+        echo '</fieldset>';
+    }
+    echo '<button type="submit" class="btn btn-primary" onclick="return confirm('
+        . s(json_encode(get_string('kurswissenerzeugenfrage', 'block_ai_chat'))) . ');">✨ '
+        . get_string('kurswissenerzeugenjetzt', 'block_ai_chat') . '</button> '
+        . html_writer::link($url, get_string('cancel'), ['class' => 'btn btn-secondary']) . '</form>';
+    echo $OUTPUT->footer();
+    exit;
+}
 echo html_writer::div(get_string('kurswisseninfo', 'block_ai_chat'),
     '', ['style' => 'margin-bottom: 16px; padding: 10px 12px; border-left: 4px solid #6d28d9; background: #f5f3ff; border-radius: 6px;']);
 if (wissen::kursmaxdateien() === 0) {
@@ -72,13 +102,12 @@ if (wissen::kursmaxdateien() === 0) {
 } else {
     $form->display();
     // Erzeugen aus den Kursinhalten (mit Rückfrage, weil die Dateien oben ersetzt werden).
-    $erzeugen = new moodle_url($url, ['erzeugen' => 1, 'sesskey' => sesskey()]);
+    $erzeugen = new moodle_url($url, ['vorschau' => 1]);
     echo html_writer::div(
         html_writer::tag('div', '✨ ' . get_string('kurswissenerzeugen', 'block_ai_chat'), ['style' => 'font-weight: bold; margin-bottom: 4px;'])
         . html_writer::div(get_string('kurswissenerzeugeninfo', 'block_ai_chat'), '', ['style' => 'font-size: 0.9rem; color: #5b6670; margin-bottom: 8px;'])
         . html_writer::link($erzeugen, '✨ ' . get_string('kurswissenerzeugen', 'block_ai_chat'), ['class' => 'btn btn-primary',
-            'style' => 'background-color: var(--format-tiles-colour, #0f6cbf); border-color: var(--format-tiles-colour, #0f6cbf); color: #fff;',
-            'onclick' => 'return confirm(' . json_encode(get_string('kurswissenerzeugenfrage', 'block_ai_chat')) . ');']),
+            'style' => 'background-color: var(--format-tiles-colour, #0f6cbf); border-color: var(--format-tiles-colour, #0f6cbf); color: #fff;']),
         '', ['style' => 'margin-top: 24px; padding: 12px 14px; border: 1px solid #d5dbe3; border-radius: 8px; background: #f8fafd;']);
 }
 echo $OUTPUT->footer();

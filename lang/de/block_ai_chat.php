@@ -37,6 +37,8 @@ $string['startvorschlaegedesc'] = 'Ein Vorschlag pro Zeile. Ein Klick schreibt i
 $string['folgevorschlaege'] = 'Knöpfe nach einer Antwort (gestufte Hilfe)';
 $string['folgevorschlaegedesc'] = 'Eine Zeile pro Knopf: „Beschriftung | Text, der gesendet wird“. Leer = keine.';
 $string['kurswissenerzeugen'] = 'Aus den Kursinhalten erzeugen';
-$string['kurswissenerzeugeninfo'] = 'Stellt die Wissensdateien aus den sichtbaren Abschnitten zusammen: Textfelder, Seiten, Aufgabenbeschreibungen und Notebooks. Verborgene Inhalte, Inhalte nur für Gruppen (z. B. Lehrkräfte) und alles mit „Lösung“ oder „Lehrkräfte“ im Namen bleiben draußen, ebenso Tests. Danach im Chat prüfen, ob keine Lösungen dabei sind.';
+$string['kurswissenerzeugeninfo'] = 'Stellt die Wissensdateien aus den Inhalten des Kurses zusammen: Textfelder, Seiten, Aufgabenbeschreibungen, Unilabel, Lektionen und Bücher sowie Dateien darin (Notebooks, PDF, Word, Text). Im nächsten Schritt siehst du alle gefundenen Inhalte und wählst aus. Tests, Umfragen und H5P bleiben immer draußen.';
 $string['kurswissenerzeugenfrage'] = 'Die bisherigen Wissensdateien dieses Kurses werden ersetzt. Fortfahren?';
 $string['kurswissenerzeugt'] = '{$a} Wissensdateien aus den Kursinhalten erzeugt. Die Abschnitte werden im Hintergrund vorbereitet (einige Minuten).';
+$string['kurswissenerzeugenjetzt'] = 'Wissensdateien erzeugen';
+$string['kurswissenvorschauinfo'] = 'Prüfe die Auswahl: Nur angehakte Inhalte kommen in die Wissensdateien. ⚠️ markiert Inhalte, die nicht vorausgewählt sind – verborgen, mit Zugangsbedingung (z. B. nur für eine Gruppe, nach Abgabe, ab Datum) oder mit einem Namen, der nach Lösung oder Lehrkräften klingt. Lösungen nie anhaken: Die KI könnte sie verraten. Dateien mit „Lösung“ o. Ä. im Namen werden immer übersprungen.';

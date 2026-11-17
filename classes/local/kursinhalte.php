@@ -1,35 +1,94 @@
 <?php
 // Lokale Erweiterung (17.11.2026, Wunsch der Nutzerin): Wissensdateien des KI-Chats aus den Inhalten des Kurses erzeugen.
-// Nimmt sichtbare Abschnitte und Aktivitäten (Textfelder, Seiten, Aufgabenbeschreibungen) und die Notebooks (.ipynb) darin bzw. in
-// Ordnern, ohne Lösungen und Lehrkräfte-Inhalte: ausgelassen werden verborgene Abschnitte/Aktivitäten, Aktivitäten mit
-// Gruppen-Bedingung (z. B. nur Gruppe „Lehrkräfte“) und alles, dessen Name nach Lösung/Lehrkraft klingt. Tests und Feedbacks
-// bleiben draußen (keine Testfragen im Chat). Ergebnis: höchstens „Wissensdateien pro Kurs“ Markdown-Dateien, nach Abschnitten
-// aufgeteilt; jede Kachel beginnt mit „# Kachel N: Name“, damit die Suche den Abschnitt kennt.
+// Ablauf: kandidaten() listet alle Inhalte nach Kacheln mit einer Vorauswahl; die Lehrkraft prüft die Liste (Häkchen) und
+// erzeugen() baut aus der Auswahl höchstens „Wissensdateien pro Kurs“ Markdown-Dateien. Jede Kachel beginnt mit „# Kachel N: Name“.
+// Vorausgewählt ist nur, was sicher für Lernende gedacht ist. NICHT vorausgewählt (aber in der Liste, mit Grund):
+//   - verborgene Kacheln/Aktivitäten, - Aktivitäten mit irgendeiner Zugangsbedingung (Gruppe, nach Abgabe, ab Datum …),
+//   - Namen, die nach Lösung oder Lehrkräften klingen (AUSSCHLUSS).
+// Gar nicht aufgenommen: Tests, Umfragen, H5P (Quizfragen), Foren, Abgaben der Lernenden (nur Dateien von mod_* und unilabeltype_*,
+// ohne Abgabe-/Feedback-Bereiche). Dateien mit „Lösung“ o. Ä. im Namen werden immer übersprungen.
 
 namespace block_ai_chat\local;
 
 class kursinhalte {
 
     /** Namen, die auf Lösungen oder Lehrkräfte-Inhalte hindeuten. */
-    private const AUSSCHLUSS = '/(l(ö|oe)sung|musterl|solution|🔒|🔑|lehrkr(ä|ae)ft|kursleitung|teacher)/iu';
+    public const AUSSCHLUSS = '/(l(ö|oe)sung|musterl|erwartungshorizont|aufl(ö|oe)sung|solution|answer\s*key|🔒|🔑|lehrkr(ä|ae)ft|'
+        . 'kursleitung|teacher|nur\s+f(ü|ue)r\s+lehr)/iu';
+
+    /** Aktivitäten, deren Text gelesen wird. */
+    private const ARTEN = ['label', 'page', 'assign', 'resource', 'folder', 'unilabel', 'lesson', 'book'];
+
+    /** Dateitypen, die mitgenommen werden. */
+    private const ENDUNGEN = ['ipynb', 'pdf', 'docx', 'txt', 'md', 'py', 'csv', 'html', 'htm'];
 
     /**
-     * Wissensdateien erzeugen und speichern (ersetzt die bisherigen); die Abschnitte berechnet eine Hintergrundaufgabe.
+     * Alle Inhalte des Kurses mit Vorauswahl, nach Kacheln.
      *
-     * @return array [Dateinamen => Zeichen]
+     * @return array Kachel-Nr. => ['titel' => …, 'eintraege' => [cmid => ['name', 'art', 'dateien', 'auswahl', 'grund']]]
      */
-    public static function erzeugen(\context_course $kurs): array {
-        $teile = self::sammeln($kurs);
+    public static function kandidaten(\context_course $kurs): array {
+        $modinfo = get_fast_modinfo($kurs->instanceid);
+        $ergebnis = [];
+        foreach ($modinfo->get_section_info_all() as $section) {
+            if ($section->component ?? null) {
+                continue;   // Unterabschnitte (Moodle 5) erscheinen in ihrer Elternkachel.
+            }
+            $titel = trim(get_section_name($kurs->instanceid, $section));
+            $eintraege = [];
+            foreach ($modinfo->sections[$section->section] ?? [] as $cmid) {
+                $cm = $modinfo->get_cm($cmid);
+                if ($cm->deletioninprogress || !in_array($cm->modname, self::ARTEN)) {
+                    continue;
+                }
+                $grund = '';
+                if (!$section->visible || !$cm->visible) {
+                    $grund = 'verborgen';
+                } else if (!empty($cm->availability) && $cm->availability !== '{"op":"&","c":[],"showc":[]}') {
+                    $grund = strpos($cm->availability, '"type":"group"') !== false ? 'nur für eine Gruppe' : 'mit Zugangsbedingung';
+                } else if (preg_match(self::AUSSCHLUSS, $cm->name . ' ' . $titel)) {
+                    $grund = 'Name klingt nach Lösung oder Lehrkräften';
+                }
+                $eintraege[$cm->id] = ['name' => $cm->get_formatted_name(), 'art' => get_string('modulename', $cm->modname),
+                    'dateien' => count(self::dateien($cm)), 'auswahl' => $grund === '', 'grund' => $grund];
+            }
+            if ($eintraege) {
+                $ergebnis[$section->section] = ['titel' => $titel, 'eintraege' => $eintraege];
+            }
+        }
+        return $ergebnis;
+    }
+
+    /**
+     * Wissensdateien aus den gewählten Aktivitäten erzeugen und speichern (ersetzt die bisherigen); Embeddings im Hintergrund.
+     *
+     * @param int[] $auswahl cmids
+     * @return array [Dateiname => Zeichen]
+     */
+    public static function erzeugen(\context_course $kurs, array $auswahl): array {
+        $auswahl = array_flip(array_map('intval', $auswahl));
+        $modinfo = get_fast_modinfo($kurs->instanceid);
+        $gesehen = [];
+        $teile = [];
+        foreach (self::kandidaten($kurs) as $nr => $kachel) {
+            $text = '';
+            foreach (array_keys($kachel['eintraege']) as $cmid) {
+                if (isset($auswahl[$cmid])) {
+                    $text .= self::aktivitaet($modinfo->get_cm($cmid), $gesehen);
+                }
+            }
+            if (trim($text) !== '') {
+                $teile[$nr] = '# Kachel ' . $nr . ': ' . $kachel['titel'] . "\n\n" . trim($text);
+            }
+        }
         $max = max(1, wissen::kursmaxdateien());
-        // Kacheln der Reihe nach auf höchstens $max Dateien verteilen (etwa gleich groß).
-        $gesamt = array_sum(array_map('strlen', $teile));
-        $ziel = max(1, (int)ceil($gesamt / $max));
+        $ziel = max(1, (int)ceil(array_sum(array_map('strlen', $teile)) / $max));
         $dateien = [];
         $aktuell = '';
         $von = $bis = null;
         foreach ($teile as $nr => $text) {
             if ($aktuell !== '' && strlen($aktuell) + strlen($text) > $ziel * 1.15 && count($dateien) < $max - 1) {
-                $dateien[self::name(count($dateien) + 1, $von, $bis)] = $aktuell;
+                $dateien[sprintf('%d_kursinhalte_kachel_%02d-%02d.md', count($dateien) + 1, $von, $bis)] = $aktuell;
                 $aktuell = '';
                 $von = null;
             }
@@ -38,7 +97,7 @@ class kursinhalte {
             $aktuell .= $text . "\n\n";
         }
         if (trim($aktuell) !== '') {
-            $dateien[self::name(count($dateien) + 1, $von, $bis)] = $aktuell;
+            $dateien[sprintf('%d_kursinhalte_kachel_%02d-%02d.md', count($dateien) + 1, $von, $bis)] = $aktuell;
         }
         $fs = get_file_storage();
         $ablage = wissen::kursablage($kurs);
@@ -51,88 +110,84 @@ class kursinhalte {
         return array_map('strlen', $dateien);
     }
 
-    private static function name(int $nr, ?int $von, ?int $bis): string {
-        return sprintf('%d_kursinhalte_kachel_%02d-%02d.md', $nr, $von, $bis);
-    }
-
     /**
-     * Text je Kachel (Abschnittsnummer => Markdown).
+     * Unterrichtsdateien einer Aktivität (nur Bereiche der Aktivität selbst bzw. von Unilabel – keine Abgaben, kein Feedback).
      *
-     * @return array
+     * @return \stored_file[]
      */
-    public static function sammeln(\context_course $kurs): array {
-        $modinfo = get_fast_modinfo($kurs->instanceid);
-        $fs = get_file_storage();
-        $gesehen = [];
-        $teile = [];
-        foreach ($modinfo->get_section_info_all() as $section) {
-            if (!$section->visible || ($section->component ?? null)) {
-                continue;
-            }
-            $titel = trim(get_section_name($kurs->instanceid, $section));
-            if (preg_match(self::AUSSCHLUSS, $titel)) {
-                continue;
-            }
-            $text = '';
-            foreach ($modinfo->sections[$section->section] ?? [] as $cmid) {
-                $cm = $modinfo->get_cm($cmid);
-                if (!$cm->visible || $cm->deletioninprogress || !in_array($cm->modname, ['label', 'page', 'assign', 'folder'])) {
-                    continue;
-                }
-                if ($cm->availability && strpos($cm->availability, '"type":"group"') !== false) {
-                    continue;
-                }
-                if (preg_match(self::AUSSCHLUSS, $cm->name)) {
-                    continue;
-                }
-                $text .= self::aktivitaet($cm, $fs, $gesehen);
-            }
-            if (trim(strip_tags($section->summary ?? '')) !== '') {
-                $text = trim(html_to_text($section->summary, 0, false)) . "\n\n" . $text;
-            }
-            if (trim($text) !== '') {
-                $teile[$section->section] = '# Kachel ' . $section->section . ': ' . $titel . "\n\n" . trim($text);
-            }
-        }
-        return $teile;
-    }
-
-    /** Text einer Aktivität samt ihrer Notebooks. */
-    private static function aktivitaet(\cm_info $cm, \file_storage $fs, array &$gesehen): string {
+    private static function dateien(\cm_info $cm): array {
         global $DB;
         $ctx = \context_module::instance($cm->id);
-        $text = '';
-        $bereiche = [];
+        $sql = "SELECT id FROM {files} WHERE contextid = ? AND filename <> '.'
+                   AND (component = ? OR component LIKE 'unilabeltype\\_%')
+                   AND filearea NOT IN ('submission_files', 'submission_onlinetext', 'feedback_files', 'combined', 'download')";
+        $fs = get_file_storage();
+        $ergebnis = [];
+        foreach ($DB->get_fieldset_sql($sql, [$ctx->id, 'mod_' . $cm->modname]) as $id) {
+            $d = $fs->get_file_by_id($id);
+            if ($d && in_array(strtolower(pathinfo($d->get_filename(), PATHINFO_EXTENSION)), self::ENDUNGEN)
+                    && !preg_match(self::AUSSCHLUSS, $d->get_filename())) {
+                $ergebnis[] = $d;
+            }
+        }
+        return $ergebnis;
+    }
+
+    /** Text einer Aktivität samt ihrer Dateien. */
+    private static function aktivitaet(\cm_info $cm, array &$gesehen): string {
+        global $DB;
+        $html = '';
         switch ($cm->modname) {
             case 'label':
                 $html = $DB->get_field('label', 'intro', ['id' => $cm->instance]);
-                $bereiche = [['mod_label', 'intro']];
                 break;
             case 'page':
                 $html = $DB->get_field('page', 'content', ['id' => $cm->instance]);
-                $bereiche = [['mod_page', 'content']];
                 break;
             case 'assign':
-                $html = $DB->get_field('assign', 'intro', ['id' => $cm->instance]);
-                $bereiche = [['mod_assign', 'intro'], ['mod_assign', 'introattachment']];
+            case 'resource':
+            case 'folder':
+                $html = $DB->get_field($cm->modname, 'intro', ['id' => $cm->instance]);
                 break;
-            default:   // Ordner: nur die Notebooks
-                $html = '';
-                $bereiche = [['mod_folder', 'content']];
+            case 'unilabel':
+                $html = (string)$DB->get_field('unilabel', 'intro', ['id' => $cm->instance]);
+                foreach ($DB->get_records_sql("SELECT s.heading, s.content FROM {unilabeltype_accordion_seg} s
+                        JOIN {unilabeltype_accordion} a ON a.id = s.accordionid WHERE a.unilabelid = ? ORDER BY s.sortorder",
+                        [$cm->instance]) as $s) {
+                    $html .= '<h3>' . $s->heading . '</h3>' . $s->content;
+                }
+                foreach ($DB->get_records_sql("SELECT t.title, t.content FROM {unilabeltype_grid_tile} t
+                        JOIN {unilabeltype_grid} g ON g.id = t.gridid WHERE g.unilabelid = ? ORDER BY t.sortorder",
+                        [$cm->instance]) as $t) {
+                    $html .= '<h3>' . $t->title . '</h3>' . $t->content;
+                }
+                break;
+            case 'lesson':
+                foreach ($DB->get_records('lesson_pages', ['lessonid' => $cm->instance], 'id', 'title, contents') as $p) {
+                    $html .= '<h3>' . $p->title . '</h3>' . $p->contents;
+                }
+                break;
+            case 'book':
+                if ($DB->get_manager()->table_exists('book_chapters')) {
+                    foreach ($DB->get_records('book_chapters', ['bookid' => $cm->instance, 'hidden' => 0], 'pagenum', 'title, content') as $c) {
+                        $html .= '<h3>' . $c->title . '</h3>' . $c->content;
+                    }
+                }
+                break;
         }
+        $text = '';
         $inhalt = trim(html_to_text((string)$html, 0, false));
         if ($inhalt !== '') {
             $text .= ($cm->modname === 'label' ? '' : '## ' . $cm->name . "\n\n") . $inhalt . "\n\n";
         }
-        foreach ($bereiche as [$komponente, $bereich]) {
-            foreach ($fs->get_area_files($ctx->id, $komponente, $bereich, false, 'filename', false) as $datei) {
-                $n = $datei->get_filename();
-                if (strtolower(pathinfo($n, PATHINFO_EXTENSION)) !== 'ipynb' || preg_match(self::AUSSCHLUSS, $n)
-                        || isset($gesehen[$datei->get_contenthash()])) {
-                    continue;
-                }
-                $gesehen[$datei->get_contenthash()] = true;
-                $text .= '## Notebook: ' . $n . "\n\n" . wissen::text($datei) . "\n\n";
+        foreach (self::dateien($cm) as $datei) {
+            if (isset($gesehen[$datei->get_contenthash()])) {
+                continue;
+            }
+            $gesehen[$datei->get_contenthash()] = true;
+            $dateitext = trim(wissen::text($datei));
+            if ($dateitext !== '') {
+                $text .= '## Datei: ' . $datei->get_filename() . "\n\n" . $dateitext . "\n\n";
             }
         }
         return $text;

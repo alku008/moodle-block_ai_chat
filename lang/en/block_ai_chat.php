@@ -162,6 +162,8 @@ $string['startvorschlaegedesc'] = 'One suggestion per line. A click writes it in
 $string['folgevorschlaege'] = 'Buttons after an answer (stepwise help)';
 $string['folgevorschlaegedesc'] = 'One line per button: "Label | text that is sent". Empty = none.';
 $string['kurswissenerzeugen'] = 'Create from course contents';
-$string['kurswissenerzeugeninfo'] = 'Builds the knowledge files from visible sections: text and media areas, pages, assignment descriptions and notebooks. Hidden content, group-restricted content (e.g. teachers) and anything named like a solution or for teachers is left out, as are quizzes. Please check in the chat that no solutions are included.';
+$string['kurswissenerzeugeninfo'] = 'Builds the knowledge files from the course contents: text areas, pages, assignment descriptions, Unilabel, lessons and books plus files in them (notebooks, PDF, Word, text). In the next step you see everything that was found and choose. Quizzes, surveys and H5P are always left out.';
 $string['kurswissenerzeugenfrage'] = 'The current knowledge files of this course will be replaced. Continue?';
 $string['kurswissenerzeugt'] = '{$a} knowledge files created from the course contents. Sections are prepared in the background (a few minutes).';
+$string['kurswissenerzeugenjetzt'] = 'Create knowledge files';
+$string['kurswissenvorschauinfo'] = 'Check the selection: only ticked contents go into the knowledge files. ⚠️ marks contents that are not preselected – hidden, with access restrictions (e.g. group only, after submission, from a date) or named like a solution or for teachers. Never tick solutions: the AI might reveal them. Files named like solutions are always skipped.';

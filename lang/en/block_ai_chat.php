@@ -186,3 +186,8 @@ $string['weblinksmax'] = 'Web pages per course and per persona';
 $string['weblinksmaxdesc'] = 'Addresses whose text is used like a knowledge file (fetched with the cURL security settings of this site). 0 = off.';
 $string['grundanweisung'] = 'Basic instruction for all chats';
 $string['grundanweisungdesc'] = 'Sent with every question in the AI chat on this site, before the persona and the knowledge files (also without a persona). Keep it short, e.g. "Address learners informally. Do not give complete solutions to tasks, give hints instead. If someone enters personal data, point out data protection." Empty = none.';
+$string['prompteinsicht'] = 'May teachers read the learners\' questions?';
+$string['prompteinsicht_erlaubt'] = 'allowed (teachers see the questions via "Show prompts" in the AI control center)';
+$string['prompteinsicht_nicht'] = 'not set (not allowed unless granted in a course)';
+$string['prompteinsicht_verboten'] = 'prohibited (no insight, cannot be allowed in courses)';
+$string['prompteinsichtdesc'] = 'This is not a setting of the AI chat but the capability "View user prompts" (local/ai_manager:viewprompts) of the roles. To switch it off: open the role (links below) → "Show advanced" → filter "viewprompts" → set "View user prompts" to "Prohibit" → save. The chat tells learners on first opening (and under "ⓘ Hints") whether their teacher can read their questions. Current state:';

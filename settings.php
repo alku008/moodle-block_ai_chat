@@ -95,6 +95,19 @@ if ($hassiteconfig) {
                 $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
                     : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
         }
+        // Lokal (17.11.2026): Wer die Fragen der Lernenden einsehen darf, ist ein Recht der Rollen (local/ai_manager:viewprompts),
+        // keine Plugin-Einstellung – hier Stand und Links zu den Rollen, damit es auffindbar ist.
+        $zeilen = [];
+        foreach (get_archetype_roles('editingteacher') + get_archetype_roles('teacher') as $rolle) {
+            $wert = $DB->get_field('role_capabilities', 'permission', ['roleid' => $rolle->id,
+                'capability' => 'local/ai_manager:viewprompts', 'contextid' => context_system::instance()->id]);
+            $stand = $wert == CAP_PROHIBIT ? get_string('prompteinsicht_verboten', 'block_ai_chat')
+                : ($wert == CAP_ALLOW ? get_string('prompteinsicht_erlaubt', 'block_ai_chat') : get_string('prompteinsicht_nicht', 'block_ai_chat'));
+            $zeilen[] = html_writer::tag('li', html_writer::link(new moodle_url('/admin/roles/define.php',
+                ['action' => 'edit', 'roleid' => $rolle->id]), role_get_name($rolle)) . ': ' . $stand);
+        }
+        $settings->add(new admin_setting_heading('block_ai_chat/prompteinsicht', new lang_string('prompteinsicht', 'block_ai_chat'),
+            get_string('prompteinsichtdesc', 'block_ai_chat') . html_writer::tag('ul', implode('', $zeilen))));
         $settings->add(new admin_setting_configtextarea('block_ai_chat/grundanweisung',
             new lang_string('grundanweisung', 'block_ai_chat'), new lang_string('grundanweisungdesc', 'block_ai_chat'), ''));
         $settings->add(new admin_setting_configtextarea('block_ai_chat/startvorschlaege',

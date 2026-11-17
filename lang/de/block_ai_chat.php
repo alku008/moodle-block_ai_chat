@@ -61,3 +61,8 @@ $string['weblinksmax'] = 'Webseiten pro Kurs und pro Persona';
 $string['weblinksmaxdesc'] = 'Adressen, deren Text wie eine Wissensdatei genutzt wird (abgerufen mit den cURL-Sicherheitseinstellungen dieser Website). 0 = aus.';
 $string['grundanweisung'] = 'Grundanweisung für alle Chats';
 $string['grundanweisungdesc'] = 'Geht bei jeder Frage im KI-Chat dieser Website mit, vor der Persona und den Wissensdateien (auch ohne Persona). Kurz halten, z. B. „Sprich die Person mit du an. Gib keine fertigen Lösungen von Aufgaben, sondern Hinweise. Wenn jemand persönliche Daten eingibt, weise auf den Datenschutz hin.“ Leer = keine.';
+$string['prompteinsicht'] = 'Dürfen Lehrkräfte die Fragen der Lernenden einsehen?';
+$string['prompteinsicht_erlaubt'] = 'erlaubt (Lehrkräfte sehen die Fragen über „Prompts anzeigen“ im KI-Kontrollzentrum)';
+$string['prompteinsicht_nicht'] = 'nicht gesetzt (nicht erlaubt, außer es wird in einem Kurs freigegeben)';
+$string['prompteinsicht_verboten'] = 'verboten (keine Einsicht, auch in Kursen nicht freischaltbar)';
+$string['prompteinsichtdesc'] = 'Das ist keine Einstellung des KI-Chats, sondern das Recht „Nutzerprompts einsehen“ (local/ai_manager:viewprompts) der Rollen. Abschalten: Rolle öffnen (Links unten) → „Erweitert zeigen“ → Filter „viewprompts“ → „Nutzerprompts einsehen“ auf „Verbieten“ → Speichern. Der Chat sagt den Lernenden beim ersten Öffnen (und unter „ⓘ Hinweise“), ob ihre Lehrkraft die Fragen einsehen kann. Aktueller Stand:';

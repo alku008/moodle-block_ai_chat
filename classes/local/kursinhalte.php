@@ -6,7 +6,7 @@
 //   - verborgene Kacheln/Aktivitäten, - Aktivitäten mit irgendeiner Zugangsbedingung (Gruppe, nach Abgabe, ab Datum …),
 //   - Namen, die nach Lösung oder Lehrkräften klingen (AUSSCHLUSS).
 // Gar nicht aufgenommen: Tests, Umfragen, H5P (Quizfragen), Foren, Abgaben der Lernenden (nur Dateien von mod_* und unilabeltype_*,
-// ohne Abgabe-/Feedback-Bereiche). Dateien mit „Lösung“ o. Ä. im Namen werden immer übersprungen.
+// ohne Abgabe-/Feedback-Bereiche). Lösungen dürfen mit (18.11.2026, Wunsch der Nutzerin): Ob die KI sie nennt, legt die Persona fest.
 
 namespace block_ai_chat\local;
 
@@ -125,8 +125,7 @@ class kursinhalte {
         $ergebnis = [];
         foreach ($DB->get_fieldset_sql($sql, [$ctx->id, 'mod_' . $cm->modname]) as $id) {
             $d = $fs->get_file_by_id($id);
-            if ($d && in_array(strtolower(pathinfo($d->get_filename(), PATHINFO_EXTENSION)), self::ENDUNGEN)
-                    && !preg_match(self::AUSSCHLUSS, $d->get_filename())) {
+            if ($d && in_array(strtolower(pathinfo($d->get_filename(), PATHINFO_EXTENSION)), self::ENDUNGEN)) {
                 $ergebnis[] = $d;
             }
         }

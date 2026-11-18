@@ -71,7 +71,8 @@ und prüfe die Antwort und die Quellenzeile.
 
 ## Tipps
 
-- **Keine Lösungen hochladen.** Die KI könnte sie verraten, auch wenn der Prompt das verbietet.
+- **Lösungen dürfen mit.** Große KIs können Lösungen ohnehin oft selbst erzeugen – dann lieber die richtigen. Ob die KI sie direkt nennen darf,
+  legst du im **Prompt** fest, z. B. „Gib keine fertigen Lösungen, sondern gestufte Tipps. Nenne die Lösung erst, wenn die Person es selbst versucht hat.“
 - **Dateien gut gliedern:** Überschriften (`#`, `##`) und Aufgabennummern („Aufgabe 3“) helfen der Suche. Eine Frage wie „Ich hänge bei
   Aufgabe 3“ findet dann genau den richtigen Abschnitt.
 - **Lieber wenige, gebündelte Dateien** als viele kleine: Es gibt höchstens 5 Dateien je Persona bzw. Kurs.

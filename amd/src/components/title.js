@@ -51,6 +51,35 @@ class Title extends BaseComponent {
     async stateReady() {
         this.defaultTitle = await getString('pluginname', 'block_ai_chat');
         this._showChatTitle();
+        // Lokal (18.11.2026): Persona-Auswahl im KI-Kontrollzentrum derselben Seite abgleichen – in beide Richtungen.
+        this._meldePersonas();
+        if (!this.kontrollzentrumListener) {
+            this.kontrollzentrumListener = (e) => {
+                const detail = e.detail || {};
+                const personaId = parseInt(detail.personaid);
+                if (parseInt(detail.chatcontextid) !== parseInt(this.reactive.state.static.contextid) || isNaN(personaId)
+                        || personaId === parseInt(this.reactive.state.config.currentPersona)) {
+                    return;
+                }
+                this.reactive.dispatch('selectCurrentPersona', personaId);
+            };
+            document.addEventListener('block_ai_control:persona', this.kontrollzentrumListener);
+        }
+    }
+
+    /**
+     * Lokal (18.11.2026): Teilt anderen Teilen der Seite (KI-Kontrollzentrum) mit, welche Personas es gibt und welche gewählt ist,
+     * damit deren Auswahl ohne Neuladen stimmt (z. B. nach dem Umbenennen oder Wählen einer Persona im Chatfenster).
+     */
+    _meldePersonas() {
+        const state = this.reactive.state;
+        const personas = [];
+        state.personas.forEach((p) => personas.push({id: parseInt(p.id), name: stripHtmlTags(p.name)}));
+        document.dispatchEvent(new CustomEvent('block_ai_chat:personas', {detail: {
+            chatcontextid: parseInt(state.static.contextid),
+            currentPersona: parseInt(state.config.currentPersona),
+            personas: personas,
+        }}));
     }
 
     /**
@@ -60,11 +89,17 @@ class Title extends BaseComponent {
     getWatchers() {
         return [
             {watch: `config.view:updated`, handler: this._updateTitle},
-            {watch: `config.currentPersona:updated`, handler: this._showChatTitle},
+            {watch: `config.currentPersona:updated`, handler: this._personasGeaendert},
             {watch: `config.mode:updated`, handler: this._showChatTitle},
-            {watch: `personas:updated`, handler: this._showChatTitle},
-            {watch: `personas:deleted`, handler: this._showChatTitle},
+            {watch: `personas:updated`, handler: this._personasGeaendert},
+            {watch: `personas:created`, handler: this._personasGeaendert},
+            {watch: `personas:deleted`, handler: this._personasGeaendert},
         ];
+    }
+
+    _personasGeaendert() {
+        this._showChatTitle();
+        this._meldePersonas();
     }
 
     _showChatTitle() {

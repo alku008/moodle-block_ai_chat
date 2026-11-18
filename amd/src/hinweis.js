@@ -42,7 +42,8 @@ define(['local_ai_manager/infobox', 'local_ai_manager/warningbox'], function(Inf
             + 'align-items: center; justify-content: center; padding: 16px; border-radius: inherit;';
         var karte = document.createElement('div');
         karte.style.cssText = 'max-width: 440px; width: 100%; background: #fff; border: 1px solid #d5dbe3; border-radius: 12px; '
-            + 'box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); padding: 18px 20px; font-size: 0.92rem; line-height: 1.45; max-height: 100%; '
+            + 'box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); padding: 18px 20px; font-size: 0.92rem; line-height: 1.45; '
+            + 'max-height: 100%; '
             + 'overflow: auto;';
         var titel = document.createElement('div');
         titel.style.cssText = 'font-weight: bold; font-size: 1.05rem; margin-bottom: 8px;';
@@ -148,7 +149,8 @@ define(['local_ai_manager/infobox', 'local_ai_manager/warningbox'], function(Inf
             var link = document.createElement('a');
             link.href = '#';
             link.textContent = 'ⓘ Hinweise';
-            link.style.cssText = 'display: inline-block; margin-top: 1px; color: #6a737d; text-decoration: underline; white-space: nowrap;';
+            link.style.cssText = 'display: inline-block; margin-top: 1px; color: #6a737d; text-decoration: underline; '
+                + 'white-space: nowrap;';
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 zeigeHinweis(rahmen);

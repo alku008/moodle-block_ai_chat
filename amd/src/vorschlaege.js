@@ -1,5 +1,6 @@
 // Lokale Erweiterung (17.11.2026, Wunsch der Nutzerin, nicht vom Hersteller): Vorschläge im KI-Chat.
-//  - Leerer Chat: Begrüßung und Startvorschläge zum Antippen; sie werden ins Eingabefeld geschrieben (zum Ergänzen, nicht sofort gesendet).
+//  - Leerer Chat: Begrüßung und Startvorschläge zum Antippen; sie werden ins Eingabefeld geschrieben
+//    (zum Ergänzen, nicht sofort gesendet).
 //  - Nach der letzten Antwort der KI: Knöpfe für gestufte Hilfe („💡 Noch ein Tipp“ …), die sofort gesendet werden.
 // Die Texte legt die Administration fest (Einstellungen startvorschlaege, folgevorschlaege; window.blockAiChatVorschlaege).
 // Ohne Build-Werkzeug: amd/build/vorschlaege.min.js ist eine unveränderte Kopie dieser Datei.
@@ -10,7 +11,8 @@ define([], function() {
         start: ['Ich komme bei der Aufgabe … nicht weiter.', 'Erklär mir bitte noch einmal: …',
             'Was bedeutet eigentlich …?'],
         folge: [{text: '💡 Noch ein Tipp', prompt: 'Gib mir bitte noch einen Tipp – aber noch nicht die Lösung.'},
-            {text: '🧩 Ähnliches Beispiel', prompt: 'Zeig mir bitte ein ähnliches, einfacheres Beispiel – nicht die Lösung meiner Aufgabe.'}]
+            {text: '🧩 Ähnliches Beispiel',
+                prompt: 'Zeig mir bitte ein ähnliches, einfacheres Beispiel – nicht die Lösung meiner Aufgabe.'}]
     };
 
     /**
@@ -23,7 +25,8 @@ define([], function() {
         var b = document.createElement('button');
         b.type = 'button';
         b.textContent = text;
-        b.style.cssText = 'border: 1px solid var(--format-tiles-colour-5, #9fc4e5); background: var(--format-tiles-colour-05, #f3f8fc); '
+        b.style.cssText = 'border: 1px solid var(--format-tiles-colour-5, #9fc4e5); '
+            + 'background: var(--format-tiles-colour-05, #f3f8fc); '
             + 'color: var(--format-tiles-colour, #0f6cbf); border-radius: 16px; padding: 4px 12px; margin: 0 6px 6px 0; '
             + 'font-size: 0.85rem; cursor: pointer; text-align: left;';
         return b;

@@ -1,6 +1,7 @@
 // Lokale Erweiterung (15.11.2026, nicht vom Hersteller): Datei im KI-Chat anhängen (für alle, auch Lernende).
 // Ein 📎-Knopf neben dem Eingabefeld liest eine Textdatei im Browser (txt, md, py, ipynb, csv, json, html, …; Notebooks werden in
-// Zellen mit Ausgaben umgewandelt) und setzt sie beim Absenden mit Markierungen vor die Frage. Der Server zeigt im Chatverlauf statt
+// Zellen mit Ausgaben umgewandelt) und setzt sie beim Absenden mit Markierungen vor die Frage.
+// Der Server zeigt im Chatverlauf statt
 // des Inhalts nur „📎 Dateiname“ (block_ai_chat\local\anhang::anzeige). Die Datei geht mit der Frage an die KI und bleibt für die
 // nächsten Fragen im Verlauf (letzte Nachrichten). Keine Speicherung als Moodle-Datei.
 // Ohne Build-Werkzeug: amd/build/anhang.min.js ist eine unveränderte Kopie dieser Datei.

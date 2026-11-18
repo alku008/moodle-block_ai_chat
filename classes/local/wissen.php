@@ -547,8 +547,22 @@ class wissen {
         $DB->delete_records(self::TABELLE, ['personaid' => 0, 'contextid' => $kurs->id]);
     }
 
-    /** Name des Embedding-Modells (Einstellung embeddingmodel). */
+    /**
+     * Wird über den AI Manager eingebettet (Einsatzzweck „Embedding“)? Sonst der frühere Weg direkt über den Telli/AIS.chat-Anschluss.
+     */
+    public static function ueber_ai_manager(): bool {
+        static $ja = null;
+        if ($ja === null) {
+            $ja = class_exists('\\local_ai_manager\\local\\embedding') && \local_ai_manager\local\embedding::available();
+        }
+        return $ja;
+    }
+
+    /** Name des Embedding-Modells: aus dem AI Manager (Einsatzzweck „Embedding“) oder sonst aus der Einstellung embeddingmodel. */
     public static function modell(): string {
+        if (self::ueber_ai_manager()) {
+            return \local_ai_manager\local\embedding::model_name();
+        }
         return trim((string)get_config('block_ai_chat', 'embeddingmodel')) ?: 'BAAI/bge-m3';
     }
 
@@ -559,6 +573,22 @@ class wissen {
      */
     public static function embeddings(array $texte, int $timeout = self::TIMEOUT_FRAGE): ?array {
         global $CFG;
+        if (!$texte) {
+            return null;
+        }
+        // Bevorzugt über den AI Manager (Einsatzzweck „Embedding“): Verbindung und Modell wählt die Schule dort, mit jedem Anschluss,
+        // der Embeddings kann (AIS.chat/telli, OpenAI, Ollama …). Nicht protokolliert und nicht auf die Anfragen-Limits angerechnet.
+        if (self::ueber_ai_manager()) {
+            $status = \cache::make_from_params(\cache_store::MODE_APPLICATION, 'block_ai_chat', 'embeddingstatus');
+            if ((int)$status->get('fehler') > time() - 300) {
+                return null;
+            }
+            $vektoren = \local_ai_manager\local\embedding::embed($texte, $timeout);
+            if ($vektoren === null) {
+                $status->set('fehler', time());
+            }
+            return $vektoren;
+        }
         require_once($CFG->libdir . '/filelib.php');
         $basis = rtrim((string)get_config('aitool_telli', 'baseurl'), '/');
         $schluessel = (string)get_config('aitool_telli', 'globalapikey');

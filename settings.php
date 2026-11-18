@@ -91,9 +91,12 @@ if ($hassiteconfig) {
         if (!CLI_SCRIPT && !during_initial_install() && empty($CFG->upgraderunning)
                 && ($_GET['section'] ?? '') === 'blocksettingai_chat' && strpos($_SERVER['SCRIPT_NAME'] ?? '', '/admin/settings.php') !== false) {
             $probe = \block_ai_chat\local\wissen::embeddings(['Test'], 5);
+            $weg = \block_ai_chat\local\wissen::ueber_ai_manager()
+                ? get_string('embeddingweg_manager', 'block_ai_chat', s(\block_ai_chat\local\wissen::modell()))
+                : get_string('embeddingweg_direkt', 'block_ai_chat');
             $settings->add(new admin_setting_description('block_ai_chat/embeddingstatus', '',
-                $probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
-                    : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')));
+                ($probe ? '✅ ' . get_string('embeddingok', 'block_ai_chat', count($probe[0]))
+                    : '⚠️ ' . get_string('embeddingfehlt', 'block_ai_chat')) . '<br>' . $weg));
         }
         // Lokal (17.11.2026): Wer die Fragen der Lernenden einsehen darf, ist ein Recht der Rollen (local/ai_manager:viewprompts),
         // keine Plugin-Einstellung – hier Stand und Links zu den Rollen, damit es auffindbar ist.

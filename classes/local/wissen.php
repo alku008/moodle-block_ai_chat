@@ -230,6 +230,22 @@ class wissen {
         return self::datei_status(self::bereich(null, $personaid));
     }
 
+    /** Liste „✅ Datei – N Abschnitte / ⚠️ kein lesbarer Text“ mit Erklärung darüber (Kurs-Seite und Persona-Formular). */
+    public static function dateistatus_html(array $status): string {
+        if (!$status) {
+            return '';
+        }
+        $zeilen = '';
+        foreach ($status as $name => $anzahl) {
+            $zeilen .= '<li style="overflow-wrap: anywhere;">' . ($anzahl > 0 ? '✅ ' : '⚠️ ') . s($name) . ' – '
+                . ($anzahl > 0 ? get_string('weblinkok', 'block_ai_chat', $anzahl)
+                    : '<span style="color: #b3261e;">' . get_string('dateiohnetext', 'block_ai_chat') . '</span>')
+                . '</li>';
+        }
+        return '<div style="font-size: 0.85rem; color: #5b6670; margin-bottom: 2px;">' . get_string('dateistatusinfo', 'block_ai_chat')
+            . '</div><ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">' . $zeilen . '</ul>';
+    }
+
     /** Namen der Dateien ohne lesbaren Text aus einer Status-Liste. */
     public static function ohne_text(array $status): array {
         return array_keys(array_filter($status, fn($n) => $n === 0));

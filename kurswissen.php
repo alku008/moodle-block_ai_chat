@@ -31,17 +31,7 @@ class block_ai_chat_kurswissen_form extends moodleform {
         $m->addHelpButton('dateien', 'kurswissen', 'block_ai_chat');
         // Lokal (19.11.2026): je Datei, ob Text gefunden wurde (⚠️ z. B. bei eingescannten PDFs – sonst fiele das niemandem auf).
         if (!empty($this->_customdata['dateistatus'])) {
-            $zeilen = '';
-            foreach ($this->_customdata['dateistatus'] as $name => $anzahl) {
-                $zeilen .= '<li style="overflow-wrap: anywhere;">' . ($anzahl > 0 ? '✅ ' : '⚠️ ') . s($name) . ' – '
-                    . ($anzahl > 0 ? get_string('weblinkok', 'block_ai_chat', $anzahl)
-                        : '<span style="color: #b3261e;">' . get_string('dateiohnetext', 'block_ai_chat') . '</span>')
-                    . '</li>';
-            }
-            // Kurze Erklärung der Zeichen über der Liste (Wunsch der Nutzerin, 19.11.2026).
-            $m->addElement('static', 'dateistatus', '', '<div style="font-size: 0.85rem; color: #5b6670; margin-bottom: 2px;">'
-                . get_string('dateistatusinfo', 'block_ai_chat') . '</div>'
-                . '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">' . $zeilen . '</ul>');
+            $m->addElement('static', 'dateistatus', '', wissen::dateistatus_html($this->_customdata['dateistatus']));
         }
         if (wissen::webmax() > 0) {
             // Linie zwischen Dateien und Webseiten, wie die Trennlinien im Kontrollzentrum (Wunsch der Nutzerin, 19.11.2026).

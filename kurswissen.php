@@ -42,6 +42,8 @@ class block_ai_chat_kurswissen_form extends moodleform {
                 . $zeilen . '</ul>');
         }
         if (wissen::webmax() > 0) {
+            // Abstand und Linie zwischen Dateien und Webseiten (Wunsch der Nutzerin, 19.11.2026).
+            $m->addElement('html', '<hr style="margin: 22px 0 18px 0; border: 0; border-top: 1px solid #b8c1cc;">');
             $m->addElement('textarea', 'weblinks', get_string('weblinks', 'block_ai_chat', wissen::webmax()),
                 ['rows' => 5, 'cols' => 70, 'placeholder' => 'https://…']);
             $m->setType('weblinks', PARAM_RAW);

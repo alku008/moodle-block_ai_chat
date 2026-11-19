@@ -42,7 +42,7 @@ class block_ai_chat_kurswissen_form extends moodleform {
                 . $zeilen . '</ul>');
         }
         if (wissen::webmax() > 0) {
-            // Linie zwischen Dateien und Webseiten und unter den Webseiten, wie die Trennlinien im Kontrollzentrum (Wunsch der Nutzerin, 19.11.2026).
+            // Linie zwischen Dateien und Webseiten, wie die Trennlinien im Kontrollzentrum (Wunsch der Nutzerin, 19.11.2026).
             $linie = '<hr style="border: 0; border-top: 1px solid #a9b6c6; opacity: 1; margin: 14px 0;">';
             $m->addElement('html', $linie);
             $m->addElement('textarea', 'weblinks', get_string('weblinks', 'block_ai_chat', wissen::webmax()),
@@ -59,7 +59,6 @@ class block_ai_chat_kurswissen_form extends moodleform {
                 $m->addElement('static', 'weblinkstatus', '', '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">'
                     . $zeilen . '</ul>');
             }
-            $m->addElement('html', $linie);
         }
         $this->add_action_buttons(true, get_string('savechanges'));
     }

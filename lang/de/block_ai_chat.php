@@ -68,3 +68,7 @@ $string['prompteinsicht_verboten'] = 'verboten (keine Einsicht, auch in Kursen n
 $string['prompteinsichtdesc'] = 'Das ist keine Einstellung des KI-Chats, sondern das Recht „Nutzerprompts einsehen“ (local/ai_manager:viewprompts) der Rollen. Abschalten: Rolle öffnen (Links unten) → „Erweitert zeigen“ → Filter „viewprompts“ → „Nutzerprompts einsehen“ auf „Verbieten“ → Speichern. Der Chat sagt den Lernenden beim ersten Öffnen (und unter „ⓘ Hinweise“), ob ihre Lehrkraft die Fragen einsehen kann. Aktueller Stand:';
 $string['embeddingweg_direkt'] = 'Weg: direkt über den Telli/AIS.chat-Anschluss mit dem oben eingetragenen Modell. Empfohlen: im AI Manager eine Verbindung mit einem Embedding-Modell anlegen (z. B. über „Modelle aus der API übernehmen“) und dem Einsatzzweck „Embedding“ zuordnen – dann gilt diese Verbindung und das Feld oben wird nicht verwendet.';
 $string['embeddingweg_manager'] = 'Weg: AI Manager, Einsatzzweck „Embedding“ (Modell {$a}). Das Feld oben wird nicht verwendet.';
+
+// Lokal (19.11.2026): Dateien ohne lesbaren Text.
+$string['dateiohnetext'] = 'kein lesbarer Text (z. B. eingescanntes PDF oder Foto) – die KI kennt diese Datei nicht';
+$string['dateienohnetext'] = 'Ohne lesbaren Text: {$a}. Eingescannte oder abfotografierte Seiten kann der KI-Chat nicht lesen. Speichere das Dokument als Word- oder Textdatei (oder als PDF aus Word bzw. mit Texterkennung) und lade es neu hoch.';

@@ -29,6 +29,18 @@ class block_ai_chat_kurswissen_form extends moodleform {
         $m->setType('courseid', PARAM_INT);
         $m->addElement('filemanager', 'dateien', get_string('wissensdateien', 'block_ai_chat'), null, wissen::kursoptionen());
         $m->addHelpButton('dateien', 'kurswissen', 'block_ai_chat');
+        // Lokal (19.11.2026): je Datei, ob Text gefunden wurde (⚠️ z. B. bei eingescannten PDFs – sonst fiele das niemandem auf).
+        if (!empty($this->_customdata['dateistatus'])) {
+            $zeilen = '';
+            foreach ($this->_customdata['dateistatus'] as $name => $anzahl) {
+                $zeilen .= '<li style="overflow-wrap: anywhere;">' . ($anzahl > 0 ? '✅ ' : '⚠️ ') . s($name) . ' – '
+                    . ($anzahl > 0 ? get_string('weblinkok', 'block_ai_chat', $anzahl)
+                        : '<span style="color: #b3261e;">' . get_string('dateiohnetext', 'block_ai_chat') . '</span>')
+                    . '</li>';
+            }
+            $m->addElement('static', 'dateistatus', '', '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">'
+                . $zeilen . '</ul>');
+        }
         if (wissen::webmax() > 0) {
             $m->addElement('textarea', 'weblinks', get_string('weblinks', 'block_ai_chat', wissen::webmax()),
                 ['rows' => 5, 'cols' => 70, 'placeholder' => 'https://…']);
@@ -58,7 +70,8 @@ if (optional_param('erzeugen', 0, PARAM_BOOL) && confirm_sesskey()) {
     redirect($url, get_string('kurswissenerzeugt', 'block_ai_chat', count($dateien)), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 $vorschau = optional_param('vorschau', 0, PARAM_BOOL);
-$form = new block_ai_chat_kurswissen_form($url, ['status' => wissen::kurs_links($kurs)]);
+$form = new block_ai_chat_kurswissen_form($url, ['status' => wissen::kurs_links($kurs),
+    'dateistatus' => wissen::kurs_dateistatus($kurs)]);
 if ($form->is_cancelled()) {
     redirect($zurueck);
 }
@@ -68,6 +81,11 @@ if ($daten = $form->get_data()) {
     $namen = wissen::kurs_dateinamen($kurs);
     $text = $anzahl < 0 ? get_string('kurswissenunveraendert', 'block_ai_chat')
         : get_string('kurswissengespeichert', 'block_ai_chat', (object)['dateien' => count($namen), 'abschnitte' => $anzahl]);
+    // Dateien ohne lesbaren Text: auf dieser Seite bleiben und deutlich warnen (Liste mit ⚠️ unter den Dateien).
+    if ($ohnetext = wissen::ohne_text(wissen::kurs_dateistatus($kurs))) {
+        redirect($url, $text . ' ' . get_string('dateienohnetext', 'block_ai_chat', s(implode(', ', $ohnetext))), null,
+            \core\output\notification::NOTIFY_WARNING);
+    }
     redirect($zurueck, $text, null, \core\output\notification::NOTIFY_SUCCESS);
 }
 $form->set_data(['courseid' => $courseid, 'dateien' => wissen::kurs_entwurf($kurs), 'weblinks' => wissen::kurs_links_text($kurs)]);

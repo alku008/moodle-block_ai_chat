@@ -75,6 +75,8 @@ und prüfe die Antwort und die Quellenzeile.
   legst du im **Prompt** fest, z. B. „Gib keine fertigen Lösungen, sondern gestufte Tipps. Nenne die Lösung erst, wenn die Person es selbst versucht hat.“
 - **Dateien gut gliedern:** Überschriften (`#`, `##`) und Aufgabennummern („Aufgabe 3“) helfen der Suche. Eine Frage wie „Ich hänge bei
   Aufgabe 3“ findet dann genau den richtigen Abschnitt.
+- **Keine Scans:** Eingescannte oder abfotografierte PDFs kann der KI-Chat nicht lesen (bei der Datei steht dann ⚠️ „kein lesbarer Text“).
+  Speichere das Dokument als Word- oder Textdatei oder als PDF aus Word und lade es neu hoch.
 - **Lieber wenige, gebündelte Dateien** als viele kleine: Es gibt höchstens 5 Dateien je Persona bzw. Kurs.
 - **Prompt kurz prüfen:** Hinweise auf AIS.chat-Funktionen, die es in Moodle nicht gibt (freie Websuche, Bilder), streichen.
   Dateien anhängen können die Lernenden im Chat trotzdem: mit 📎 (Text-, Code- und Notebook-Dateien).

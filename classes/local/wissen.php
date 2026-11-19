@@ -209,6 +209,32 @@ class wissen {
         return $status;
     }
 
+    /**
+     * Lokal (19.11.2026): je Wissensdatei die Zahl der gespeicherten Abschnitte (0 = kein lesbarer Text, z. B. eingescanntes PDF
+     * oder Foto). Der mitgelieferte PDF-Leser liest nur die Textebene; Bilder liest er nicht (keine KI-Kosten).
+     */
+    private static function datei_status(array $b): array {
+        global $DB;
+        $status = [];
+        foreach (self::dateien($b) as $datei) {
+            $status[$datei->get_filename()] = $DB->count_records(self::TABELLE, $b[3] + ['filename' => $datei->get_filename()]);
+        }
+        return $status;
+    }
+
+    public static function kurs_dateistatus(\context_course $kurs): array {
+        return self::datei_status(self::bereich($kurs));
+    }
+
+    public static function persona_dateistatus(int $personaid): array {
+        return self::datei_status(self::bereich(null, $personaid));
+    }
+
+    /** Namen der Dateien ohne lesbaren Text aus einer Status-Liste. */
+    public static function ohne_text(array $status): array {
+        return array_keys(array_filter($status, fn($n) => $n === 0));
+    }
+
     public static function kurs_links(\context_course $kurs): array {
         return self::link_status(self::bereich($kurs));
     }
@@ -447,7 +473,11 @@ class wissen {
             $pdf = (new \Smalot\PdfParser\Parser([], $konfig))->parseContent($inhalt);
             $seiten = [];
             foreach ($pdf->getPages() as $nr => $seite) {
-                $seiten[] = '# Seite ' . ($nr + 1) . "\n\n" . trim($seite->getText());
+                // Seiten ohne Textebene (Scan, Foto) auslassen – sonst entstünden leere Abschnitte nur mit „# Seite N“.
+                $text = trim($seite->getText());
+                if ($text !== '') {
+                    $seiten[] = '# Seite ' . ($nr + 1) . "\n\n" . $text;
+                }
             }
             return implode("\n\n", $seiten);
         } catch (\Throwable $e) {

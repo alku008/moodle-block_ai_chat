@@ -193,3 +193,7 @@ $string['prompteinsicht_verboten'] = 'prohibited (no insight, cannot be allowed 
 $string['prompteinsichtdesc'] = 'This is not a setting of the AI chat but the capability "View user prompts" (local/ai_manager:viewprompts) of the roles. To switch it off: open the role (links below) → "Show advanced" → filter "viewprompts" → set "View user prompts" to "Prohibit" → save. The chat tells learners on first opening (and under "ⓘ Hints") whether their teacher can read their questions. Current state:';
 $string['embeddingweg_direkt'] = 'Route: directly via the telli/AIS.chat connector with the model entered above. Recommended: in the AI manager, create a connection with an embedding model (e.g. via "Import models from the API") and assign it to the purpose "Embedding" – then that connection is used and the field above is ignored.';
 $string['embeddingweg_manager'] = 'Route: AI manager, purpose "Embedding" (model {$a}). The field above is not used.';
+
+// Local (19.11.2026): files without readable text.
+$string['dateiohnetext'] = 'no readable text (e.g. scanned PDF or photo) – the AI does not know this file';
+$string['dateienohnetext'] = 'Without readable text: {$a}. The AI chat cannot read scanned or photographed pages. Save the document as a Word or text file (or as a PDF exported from Word or with text recognition) and upload it again.';

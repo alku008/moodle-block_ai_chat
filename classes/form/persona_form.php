@@ -86,6 +86,14 @@ class persona_form extends dynamic_form {
             $mform->addElement('filemanager', 'wissensdateien', get_string('personawissen', 'block_ai_chat'), null,
                 \block_ai_chat\local\wissen::personaoptionen());
             $mform->addHelpButton('wissensdateien', 'personawissen', 'block_ai_chat');
+            // Lokal (19.11.2026): Warnung, wenn eine Datei keinen lesbaren Text hat (z. B. eingescanntes PDF).
+            $ohnetext = !empty($personarecord)
+                ? \block_ai_chat\local\wissen::ohne_text(\block_ai_chat\local\wissen::persona_dateistatus((int)$personarecord->id)) : [];
+            if ($ohnetext) {
+                $mform->addElement('html', '<div style="margin: 0 0 8px 0; padding: 8px 12px; border-left: 4px solid #b3261e; '
+                    . 'background: #fdf0ef; border-radius: 6px; font-size: 0.9rem;">⚠️ '
+                    . get_string('dateienohnetext', 'block_ai_chat', s(implode(', ', $ohnetext))) . '</div>');
+            }
         }
         if (\block_ai_chat\local\wissen::webmax() > 0) {
             $mform->addElement('textarea', 'weblinks', get_string('weblinks', 'block_ai_chat', \block_ai_chat\local\wissen::webmax()),

@@ -38,8 +38,10 @@ class block_ai_chat_kurswissen_form extends moodleform {
                         : '<span style="color: #b3261e;">' . get_string('dateiohnetext', 'block_ai_chat') . '</span>')
                     . '</li>';
             }
-            $m->addElement('static', 'dateistatus', '', '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">'
-                . $zeilen . '</ul>');
+            // Kurze Erklärung der Zeichen über der Liste (Wunsch der Nutzerin, 19.11.2026).
+            $m->addElement('static', 'dateistatus', '', '<div style="font-size: 0.85rem; color: #5b6670; margin-bottom: 2px;">'
+                . get_string('dateistatusinfo', 'block_ai_chat') . '</div>'
+                . '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">' . $zeilen . '</ul>');
         }
         if (wissen::webmax() > 0) {
             // Linie zwischen Dateien und Webseiten, wie die Trennlinien im Kontrollzentrum (Wunsch der Nutzerin, 19.11.2026).

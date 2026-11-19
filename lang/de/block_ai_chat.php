@@ -72,3 +72,4 @@ $string['embeddingweg_manager'] = 'Weg: AI Manager, Einsatzzweck „Embedding“
 // Lokal (19.11.2026): Dateien ohne lesbaren Text.
 $string['dateiohnetext'] = 'kein lesbarer Text (z. B. eingescanntes PDF oder Foto) – die KI kennt diese Datei nicht';
 $string['dateienohnetext'] = 'Ohne lesbaren Text: {$a}. Eingescannte oder abfotografierte Seiten kann der KI-Chat nicht lesen. Speichere das Dokument als Word- oder Textdatei (oder als PDF aus Word bzw. mit Texterkennung) und lade es neu hoch.';
+$string['dateistatusinfo'] = 'So hat der KI-Chat deine Dateien gelesen: ✅ Text gefunden und in Abschnitte für die Suche zerlegt (Zahl der Abschnitte) · ⚠️ kein lesbarer Text – die KI kennt diese Datei nicht.';

@@ -197,3 +197,4 @@ $string['embeddingweg_manager'] = 'Route: AI manager, purpose "Embedding" (model
 // Local (19.11.2026): files without readable text.
 $string['dateiohnetext'] = 'no readable text (e.g. scanned PDF or photo) – the AI does not know this file';
 $string['dateienohnetext'] = 'Without readable text: {$a}. The AI chat cannot read scanned or photographed pages. Save the document as a Word or text file (or as a PDF exported from Word or with text recognition) and upload it again.';
+$string['dateistatusinfo'] = 'How the AI chat has read your files: ✅ text found and split into sections for the search (number of sections) · ⚠️ no readable text – the AI does not know this file.';

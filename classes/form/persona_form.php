@@ -86,13 +86,18 @@ class persona_form extends dynamic_form {
             $mform->addElement('filemanager', 'wissensdateien', get_string('personawissen', 'block_ai_chat'), null,
                 \block_ai_chat\local\wissen::personaoptionen());
             $mform->addHelpButton('wissensdateien', 'personawissen', 'block_ai_chat');
+            // Die Abfrage beim Hochladen lädt der KI-Chat-Block (block_ai_chat.php, bildki_abfrage.beobachten).
             // Lokal (19.11.2026): je Datei, ob Text gefunden wurde (wie auf der Kurs-Seite), und Warnung bei Dateien ohne Text.
             $dateistatus = !empty($personarecord)
                 ? \block_ai_chat\local\wissen::persona_dateistatus((int)$personarecord->id) : [];
             if ($dateistatus) {
-                $mform->addElement('static', 'dateistatus', '', \block_ai_chat\local\wissen::dateistatus_html($dateistatus));
+                $mform->addElement('static', 'dateistatus', '', \block_ai_chat\local\wissen::dateistatus_html($dateistatus,
+                    \block_ai_chat\local\wissen::bildki_verfuegbar()
+                        ? \block_ai_chat\local\wissen::persona_bildki((int)$personarecord->id) : null,
+                    \block_ai_chat\local\wissen::persona_gekuerzt((int)$personarecord->id)));
             }
-            $ohnetext = \block_ai_chat\local\wissen::ohne_text($dateistatus);
+            $ohnetext = !empty($personarecord) ? \block_ai_chat\local\wissen::ohne_text($dateistatus,
+                \block_ai_chat\local\wissen::persona_gekuerzt((int)$personarecord->id)) : [];
             if ($ohnetext) {
                 $mform->addElement('html', '<div style="margin: 6px 0 8px 0; padding: 8px 12px; border-left: 4px solid #b3261e; '
                     . 'background: #fdf0ef; border-radius: 6px; font-size: 0.9rem;">⚠️ '
@@ -210,8 +215,14 @@ class persona_form extends dynamic_form {
         $ergebnis = $manager->edit_persona($personadata, $USER->id);
         if (isset($formdata->wissensdateien) || isset($formdata->weblinks)) {
             \core_php_time_limit::raise(300);
+            // Häkchen „Bilder und Grafiken mit KI lesen“ kommen als rohe Formularfelder (stehen in der Statusliste).
+            $bildki = null;
+            if (\block_ai_chat\local\wissen::bildki_verfuegbar()) {
+                $roh = $this->_ajaxformdata['bildki'] ?? [];
+                $bildki = array_map(fn($n) => clean_param((string)$n, PARAM_FILE), is_array($roh) ? $roh : []);
+            }
             \block_ai_chat\local\wissen::persona_speichern((int)$formdata->personaid, (int)($formdata->wissensdateien ?? 0),
-                isset($formdata->weblinks) ? (string)$formdata->weblinks : null);
+                isset($formdata->weblinks) ? (string)$formdata->weblinks : null, $bildki);
         }
         return $ergebnis;
     }

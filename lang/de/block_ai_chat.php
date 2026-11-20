@@ -72,4 +72,27 @@ $string['embeddingweg_manager'] = 'Weg: AI Manager, Einsatzzweck „Embedding“
 // Lokal (19.11.2026): Dateien ohne lesbaren Text.
 $string['dateiohnetext'] = 'kein lesbarer Text (z. B. eingescanntes PDF oder Foto) – die KI kennt diese Datei nicht';
 $string['dateienohnetext'] = 'Ohne lesbaren Text: {$a}. Eingescannte oder abfotografierte Seiten kann der KI-Chat nicht lesen. Speichere das Dokument als Word- oder Textdatei (oder als PDF aus Word bzw. mit Texterkennung) und lade es neu hoch.';
-$string['dateistatusinfo'] = 'So hat der KI-Chat deine Dateien gelesen: ✅ Text gefunden und in Abschnitte für die Suche zerlegt (Zahl der Abschnitte) · ⚠️ kein lesbarer Text – die KI kennt diese Datei nicht.';
+$string['dateistatusinfo'] = 'So hat der KI-Chat deine Dateien bisher gelesen:';
+
+// Lokal (20.11.2026): Bilder und Grafiken mit KI lesen (nur mit local_ai_content).
+$string['bildkigelesen'] = 'von der KI gelesen';
+$string['bildkihaken'] = '🤖 Bilder und Grafiken mit KI in Text umwandeln';
+$string['bildkiinfo'] = '<strong>Neu (nur für PDF-Dateien):</strong> Enthält ein PDF viele Bilder, Grafiken, Diagramme oder eingescannte Seiten, kannst du es mit dem Häkchen 🤖 von der KI in Text umwandeln lassen. Ohne Häkchen liest der KI-Chat nur den Text im PDF – kostenlos. <strong>Mit Häkchen kostet jede Seite eine KI-Anfrage</strong> (bei einem PDF mit 20 Seiten also 20 Anfragen) und das Speichern dauert länger.<br>Häkchen setzen und „Änderungen speichern“; neu hochgeladene Dateien zuerst speichern, dann erscheint das Häkchen.';
+$string['dateiohnetextki'] = 'kein lesbarer Text (z. B. Scan) – setze das Häkchen 🤖, dann liest die KI die Seiten';
+$string['dateistatuslegende'] = '✅ Text gefunden und für die Suche in Abschnitte zerlegt (Zahl der Abschnitte in Klammern)';
+$string['dateiabschnitte'] = '{$a} Abschnitte';
+$string['dateiabschnitt'] = '1 Abschnitt';
+$string['dateistatuslegende2'] = '⚠️ kein lesbarer Text – die KI kennt diese Datei nicht';
+$string['bildkiabfragetitel'] = '🤖 Bilder und Grafiken mit KI umwandeln?';
+$string['bildkiabfrage'] = 'Enthält das hochgeladene PDF viele Bilder, Grafiken, Diagramme oder eingescannte Seiten? Dann kann die KI es in Text umwandeln, damit der KI-Chat auch diese Inhalte kennt.';
+$string['bildkiabfragekosten'] = 'Ohne Häkchen liest der KI-Chat nur den Text im PDF – kostenlos. Mit Häkchen kostet jede Seite eine KI-Anfrage, und das Speichern dauert länger. Du kannst die Wahl später in der Liste unter den Dateien ändern. Die Umwandlung startet beim Klick auf „Änderungen speichern“.';
+$string['bildkiabfrageja'] = 'Übernehmen';
+$string['bildkiabfragenein'] = 'Nur Text lesen';
+$string['bildkiabfragegewaehlt'] = 'Wird beim Speichern mit KI umgewandelt:';
+$string['backtocourse'] = 'Zurück zum Kurs';
+$string['bildkinurtext'] = 'nur Text gelesen (kostenlos)';
+$string['dateistatusbeispiel'] = '<em>Beispiel – so sehen die Zeichen in der Liste unten aus:</em>';
+$string['dateigekuerzt'] = 'gekürzt: nur {$a->ist} von {$a->soll} Abschnitten aufgenommen – höchstens {$a->max} Abschnitte je Kurs bzw. Persona. Entferne andere Dateien oder bitte die Administration, die Grenze zu erhöhen.';
+$string['dateiweggelassen'] = 'nicht aufgenommen: Die Höchstzahl von {$a->max} Abschnitten je Kurs bzw. Persona ist schon durch die Dateien darüber erreicht. Entferne andere Dateien oder bitte die Administration, die Grenze zu erhöhen.';
+$string['wissenmaxabschnitte'] = 'Höchstzahl der Abschnitte je Kurs bzw. Persona';
+$string['wissenmaxabschnittedesc'] = 'Schutz vor Überlastung: So viele Abschnitte (je ca. 1.200 Zeichen) aus allen Dateien und Webseiten eines Kurses bzw. einer Persona werden höchstens für die Suche vorbereitet. Was darüber hinausgeht, wird nicht aufgenommen und in der Dateiliste als „gekürzt“ bzw. „nicht aufgenommen“ angezeigt. Standard 1000 (mindestens 50).';

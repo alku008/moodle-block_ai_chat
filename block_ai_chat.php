@@ -108,6 +108,12 @@ class block_ai_chat extends block_base {
         $this->page->requires->js_init_code('window.blockAiChatVorschlaege = '
             . json_encode(\block_ai_chat\local\anhang::vorschlaege(), JSON_HEX_TAG | JSON_HEX_AMP) . ';');
 
+        // Lokal (20.11.2026): Abfrage „Bilder mit KI umwandeln?“ beim Hochladen im Persona-Formular. Das Formular wird erst später in
+        // ein Fenster geladen und führt dabei kein eigenes JavaScript aus – das Modul wartet deshalb, bis das Upload-Feld erscheint.
+        if (has_capability('block/ai_chat:edit', $this->context) && \block_ai_chat\local\wissen::bildki_verfuegbar()) {
+            $this->page->requires->js_call_amd('block_ai_chat/bildki_abfrage', 'beobachten', ['wissensdateien']);
+        }
+
         if ($this->page->user_is_editing()) {
             return $this->content;
         }

@@ -197,4 +197,27 @@ $string['embeddingweg_manager'] = 'Route: AI manager, purpose "Embedding" (model
 // Local (19.11.2026): files without readable text.
 $string['dateiohnetext'] = 'no readable text (e.g. scanned PDF or photo) – the AI does not know this file';
 $string['dateienohnetext'] = 'Without readable text: {$a}. The AI chat cannot read scanned or photographed pages. Save the document as a Word or text file (or as a PDF exported from Word or with text recognition) and upload it again.';
-$string['dateistatusinfo'] = 'How the AI chat has read your files: ✅ text found and split into sections for the search (number of sections) · ⚠️ no readable text – the AI does not know this file.';
+$string['dateistatusinfo'] = 'How the AI chat has read your files so far:';
+
+// Local (20.11.2026): read images and diagrams with AI (only with local_ai_content).
+$string['bildkigelesen'] = 'read by AI';
+$string['bildkihaken'] = '🤖 Convert images and diagrams to text with AI';
+$string['bildkiinfo'] = '<strong>New (PDF files only):</strong> If a PDF contains many images, graphics, diagrams or scanned pages, you can tick 🤖 to let the AI convert it to text. Without the tick, the AI chat reads only the text in the PDF – free of charge. <strong>With the tick, every page costs one AI request</strong> (a PDF with 20 pages: 20 requests) and saving takes longer.<br>Tick and click "Save changes"; save newly uploaded files first, then the tick box appears.';
+$string['dateiohnetextki'] = 'no readable text (e.g. scan) – tick 🤖 and the AI will read the pages';
+$string['dateistatuslegende'] = '✅ text found and split into sections for the search (number of sections in brackets)';
+$string['dateiabschnitte'] = '{$a} sections';
+$string['dateiabschnitt'] = '1 section';
+$string['dateistatuslegende2'] = '⚠️ no readable text – the AI does not know this file';
+$string['bildkiabfragetitel'] = '🤖 Convert images and diagrams with AI?';
+$string['bildkiabfrage'] = 'Does the uploaded PDF contain many images, graphics, diagrams or scanned pages? Then the AI can convert it to text, so the AI chat also knows this content.';
+$string['bildkiabfragekosten'] = 'Without the tick, the AI chat reads only the text in the PDF – free of charge. With the tick, every page costs one AI request and saving takes longer. You can change this later in the list below the files. The conversion starts when you click "Save changes".';
+$string['bildkiabfrageja'] = 'Apply';
+$string['bildkiabfragenein'] = 'Read text only';
+$string['bildkiabfragegewaehlt'] = 'Will be converted with AI when saving:';
+$string['backtocourse'] = 'Back to course';
+$string['bildkinurtext'] = 'text only (free)';
+$string['dateistatusbeispiel'] = '<em>Example – this is what the symbols in the list below mean:</em>';
+$string['dateigekuerzt'] = 'shortened: only {$a->ist} of {$a->soll} sections included – at most {$a->max} sections per course or persona. Remove other files or ask the administration to raise the limit.';
+$string['dateiweggelassen'] = 'not included: the maximum of {$a->max} sections per course or persona is already reached by the files above. Remove other files or ask the administration to raise the limit.';
+$string['wissenmaxabschnitte'] = 'Maximum number of sections per course or persona';
+$string['wissenmaxabschnittedesc'] = 'Protection against overload: at most this many sections (about 1,200 characters each) from all files and web pages of a course or persona are prepared for the search. Anything beyond is not included and shown as "shortened" or "not included" in the file list. Default 1000 (minimum 50).';

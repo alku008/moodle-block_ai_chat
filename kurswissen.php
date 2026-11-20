@@ -31,7 +31,8 @@ class block_ai_chat_kurswissen_form extends moodleform {
         $m->addHelpButton('dateien', 'kurswissen', 'block_ai_chat');
         // Lokal (19.11.2026): je Datei, ob Text gefunden wurde (⚠️ z. B. bei eingescannten PDFs – sonst fiele das niemandem auf).
         if (!empty($this->_customdata['dateistatus'])) {
-            $m->addElement('static', 'dateistatus', '', wissen::dateistatus_html($this->_customdata['dateistatus']));
+            $m->addElement('static', 'dateistatus', '', wissen::dateistatus_html($this->_customdata['dateistatus'],
+                $this->_customdata['bildki'] ?? null, $this->_customdata['gekuerzt'] ?? []));
         }
         if (wissen::webmax() > 0) {
             // Linie zwischen Dateien und Webseiten, wie die Trennlinien im Kontrollzentrum (Wunsch der Nutzerin, 19.11.2026).
@@ -66,22 +67,31 @@ if (optional_param('erzeugen', 0, PARAM_BOOL) && confirm_sesskey()) {
 }
 $vorschau = optional_param('vorschau', 0, PARAM_BOOL);
 $form = new block_ai_chat_kurswissen_form($url, ['status' => wissen::kurs_links($kurs),
-    'dateistatus' => wissen::kurs_dateistatus($kurs)]);
+    'dateistatus' => wissen::kurs_dateistatus($kurs),
+    'bildki' => wissen::bildki_verfuegbar($kurs->id) ? wissen::kurs_bildki($kurs) : null,
+    'gekuerzt' => wissen::kurs_gekuerzt($kurs)]);
 if ($form->is_cancelled()) {
     redirect($zurueck);
 }
 if ($daten = $form->get_data()) {
     core_php_time_limit::raise(300);
-    $anzahl = wissen::kurs_speichern($kurs, (int)$daten->dateien, isset($daten->weblinks) ? (string)$daten->weblinks : null);
+    // Häkchen „Bilder und Grafiken mit KI lesen“ (nur, wenn die KI hier Bilder lesen kann).
+    $bildki = wissen::bildki_verfuegbar($kurs->id) ? optional_param_array('bildki', [], PARAM_FILE) : null;
+    $anzahl = wissen::kurs_speichern($kurs, (int)$daten->dateien, isset($daten->weblinks) ? (string)$daten->weblinks : null, $bildki);
     $namen = wissen::kurs_dateinamen($kurs);
+    $gekuerzt = wissen::kurs_gekuerzt($kurs);
+    $lesart = $bildki !== null || $gekuerzt
+        ? wissen::lesart_meldung(wissen::kurs_dateistatus($kurs), wissen::kurs_bildki($kurs), $gekuerzt) : '';
     $text = $anzahl < 0 ? get_string('kurswissenunveraendert', 'block_ai_chat')
         : get_string('kurswissengespeichert', 'block_ai_chat', (object)['dateien' => count($namen), 'abschnitte' => $anzahl]);
+    $text .= $lesart;
     // Dateien ohne lesbaren Text: auf dieser Seite bleiben und deutlich warnen (Liste mit ⚠️ unter den Dateien).
-    if ($ohnetext = wissen::ohne_text(wissen::kurs_dateistatus($kurs))) {
-        redirect($url, $text . ' ' . get_string('dateienohnetext', 'block_ai_chat', s(implode(', ', $ohnetext))), null,
+    if (($ohnetext = wissen::ohne_text(wissen::kurs_dateistatus($kurs), $gekuerzt)) || $gekuerzt) {
+        redirect($url, $text . ($ohnetext ? ' ' . get_string('dateienohnetext', 'block_ai_chat', s(implode(', ', $ohnetext))) : ''), null,
             \core\output\notification::NOTIFY_WARNING);
     }
-    redirect($zurueck, $text, null, \core\output\notification::NOTIFY_SUCCESS);
+    // Nach dem Speichern auf dieser Seite bleiben (Wunsch der Nutzerin, 20.11.2026: man sieht sofort, wie die Dateien gelesen wurden).
+    redirect($url, $text, null, \core\output\notification::NOTIFY_SUCCESS);
 }
 $form->set_data(['courseid' => $courseid, 'dateien' => wissen::kurs_entwurf($kurs), 'weblinks' => wissen::kurs_links_text($kurs)]);
 
@@ -130,6 +140,12 @@ if (wissen::kursmaxdateien() === 0) {
     echo $OUTPUT->notification(get_string('kurswissenaus', 'block_ai_chat'), 'warning');
 } else {
     $form->display();
+    if (wissen::bildki_verfuegbar($kurs->id)) {
+        // Beim Hochladen eines PDFs fragen, ob die KI Bilder und Scans in Text umwandeln soll.
+        $PAGE->requires->js_call_amd('block_ai_chat/bildki_abfrage', 'init', ['dateien']);
+    }
+    echo html_writer::div(html_writer::link($zurueck, '← ' . get_string('backtocourse', 'block_ai_chat')), '',
+        ['style' => 'margin-top: 8px;']);
     // Erzeugen aus den Kursinhalten (mit Rückfrage, weil die Dateien oben ersetzt werden).
     $erzeugen = new moodle_url($url, ['vorschau' => 1]);
     echo html_writer::div(

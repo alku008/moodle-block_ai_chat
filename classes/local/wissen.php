@@ -22,6 +22,9 @@ class wissen {
     /** Erlaubte Dateitypen. PDF liest der mitgelieferte PdfParser (thirdparty/pdfparser, reines PHP, kein Programm auf dem Server nötig). */
     public const TYPEN = ['.txt', '.md', '.ipynb', '.py', '.html', '.htm', '.csv', '.docx', '.pdf'];
 
+    /** Bilder als Wissensdateien – nur, wenn die KI sie lesen kann (local_ai_content + Zweck „Bild zu Text“). */
+    public const BILDTYPEN = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
+
     /** Zielgröße eines Abschnitts in Zeichen. */
     private const ABSCHNITT = 1200;
 
@@ -30,7 +33,35 @@ class wissen {
     private const MAXZEICHEN = 5000;
 
     /** Höchstens so viele Abschnitte pro Bereich (Kurs bzw. Persona) – begrenzt Speicher und Rechenzeit bei jeder Frage. */
-    private const MAXABSCHNITTE = 400;
+    private const MAXABSCHNITTE = 1000;
+
+    /** Höchstzahl der Abschnitte je Kurs bzw. Persona (Einstellung wissenmaxabschnitte, Standard MAXABSCHNITTE). */
+    public static function maxabschnitte(): int {
+        $wert = get_config('block_ai_chat', 'wissenmaxabschnitte');
+        return ($wert === false || $wert === '') ? self::MAXABSCHNITTE : max(50, (int)$wert);
+    }
+
+    /** Schlüssel eines Bereichs für Einstellungen (Kurs: k<contextid>, Persona: p<id>). */
+    private static function bereichsname(array $b): string {
+        return $b[3]['personaid'] > 0 ? 'p' . $b[3]['personaid'] : 'k' . $b[3]['contextid'];
+    }
+
+    /**
+     * Dateien, die beim letzten Zerlegen wegen der Höchstzahl gekürzt wurden: Name → Zahl der Abschnitte, die die Datei gehabt hätte.
+     * (19./20.11.2026: Vorher stand dann fälschlich „kein lesbarer Text“.)
+     */
+    private static function gekuerzt(array $b): array {
+        $liste = json_decode((string)get_config('block_ai_chat', 'gekuerzt_' . self::bereichsname($b)), true);
+        return is_array($liste) ? $liste : [];
+    }
+
+    public static function kurs_gekuerzt(\context_course $kurs): array {
+        return self::gekuerzt(self::bereich($kurs));
+    }
+
+    public static function persona_gekuerzt(int $personaid): array {
+        return self::gekuerzt(self::bereich(null, $personaid));
+    }
 
     /** Zeitlimit (Sekunden) für das Embedding einer Frage im Chat; beim Zerlegen der Dateien länger. */
     private const TIMEOUT_FRAGE = 8;
@@ -58,7 +89,8 @@ class wissen {
 
     private static function optionen(int $max): array {
         $mb = (int)(get_config('block_ai_chat', 'wissenmaxbytes') ?: 5);
-        return ['subdirs' => 0, 'maxfiles' => max(1, $max), 'maxbytes' => $mb * 1024 * 1024, 'accepted_types' => self::TYPEN];
+        $typen = self::bildki_verfuegbar() ? array_merge(self::TYPEN, self::BILDTYPEN) : self::TYPEN;
+        return ['subdirs' => 0, 'maxfiles' => max(1, $max), 'maxbytes' => $mb * 1024 * 1024, 'accepted_types' => $typen];
     }
 
     public static function kursoptionen(): array {
@@ -91,7 +123,7 @@ class wissen {
 
     private static function fingerabdruck(array $b): string {
         return implode('|', array_map(fn($d) => $d->get_filename() . ':' . $d->get_contenthash(), self::dateien($b)))
-            . '|' . implode('|', self::links($b));
+            . '|' . implode('|', self::links($b)) . '|ki:' . implode('|', self::bildki($b));
     }
 
     // ---- Webseiten als Wissen (17.11.2026, Wunsch der Nutzerin) ----
@@ -231,24 +263,143 @@ class wissen {
     }
 
     /** Liste „✅ Datei – N Abschnitte / ⚠️ kein lesbarer Text“ mit Erklärung darüber (Kurs-Seite und Persona-Formular). */
-    public static function dateistatus_html(array $status): string {
+    public static function dateistatus_html(array $status, ?array $bildki = null, array $gekuerzt = []): string {
         if (!$status) {
             return '';
         }
         $zeilen = '';
         foreach ($status as $name => $anzahl) {
-            $zeilen .= '<li style="overflow-wrap: anywhere;">' . ($anzahl > 0 ? '✅ ' : '⚠️ ') . s($name) . ' – '
-                . ($anzahl > 0 ? get_string('weblinkok', 'block_ai_chat', $anzahl)
-                    : '<span style="color: #b3261e;">' . get_string('dateiohnetext', 'block_ai_chat') . '</span>')
-                . '</li>';
+            $pdf = strtolower(pathinfo($name, PATHINFO_EXTENSION)) === 'pdf';
+            $angehakt = $bildki !== null && in_array($name, $bildki, true);
+            $voll = isset($gekuerzt[$name]) ? (object)['ist' => $anzahl, 'soll' => $gekuerzt[$name], 'max' => self::maxabschnitte()] : null;
+            $zeilen .= '<li style="overflow-wrap: anywhere;">' . ($anzahl > 0 && !$voll ? '✅ ' : '⚠️ ') . s($name)
+                . ($voll ? ' – <span style="color: #b3261e;">' . get_string($anzahl > 0 ? 'dateigekuerzt' : 'dateiweggelassen',
+                        'block_ai_chat', $voll) . '</span>'
+                    : ($anzahl > 0 ? ' (' . ($anzahl === 1 ? get_string('dateiabschnitt', 'block_ai_chat')
+                        : get_string('dateiabschnitte', 'block_ai_chat', $anzahl)) . ')'
+                    : ' – <span style="color: #b3261e;">' . get_string($bildki !== null && $pdf ? 'dateiohnetextki' : 'dateiohnetext',
+                        'block_ai_chat') . '</span>'))
+                . ($bildki !== null && (self::ist_bild($name) || $angehakt) && $anzahl > 0 ? ' · 🤖 ' . get_string('bildkigelesen', 'block_ai_chat') : '')
+                . ($bildki !== null && $pdf && !$angehakt && $anzahl > 0 ? ' · 📄 ' . get_string('bildkinurtext', 'block_ai_chat') : '');
+            if ($bildki !== null && $pdf) {
+                $id = 'bildki_' . substr(sha1($name), 0, 10);
+                $zeilen .= '<div style="margin: 1px 0 3px 0;"><input type="checkbox" name="bildki[]" value="' . s($name) . '" id="' . $id . '"'
+                    . ($angehakt ? ' checked' : '') . '> <label for="' . $id . '" style="display: inline; color: #5b6670;">'
+                    . get_string('bildkihaken', 'block_ai_chat') . '</label></div>';
+            }
+            $zeilen .= '</li>';
         }
-        return '<div style="font-size: 0.85rem; color: #5b6670; margin-bottom: 2px;">' . get_string('dateistatusinfo', 'block_ai_chat')
-            . '</div><ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">' . $zeilen . '</ul>';
+        // Aufbau (Wunsch der Nutzerin, 20.11.2026): Überschrift, Absatz mit Zeichenerklärung, Liste, darunter der Hinweis zum Häkchen.
+        $klein = 'font-size: 0.85rem; color: #5b6670;';
+        return '<div style="font-size: 0.9rem; font-weight: bold; margin-bottom: 4px;">' . get_string('dateistatusinfo', 'block_ai_chat') . '</div>'
+            // Hinweis zum Häkchen direkt unter der Überschrift, vor der Liste (Wunsch der Nutzerin, 20.11.2026).
+            // Zeichenerklärung im selben grauen Kasten (Wunsch der Nutzerin, 20.11.2026).
+            . '<div style="' . $klein . ' margin: 0 0 8px 0; padding: 6px 10px; background: #f6f8fa; border-radius: 6px;">'
+            . ($bildki !== null ? get_string('bildkiinfo', 'block_ai_chat') : '')
+            . '<div style="margin: ' . ($bildki !== null ? '6px' : '0') . ' 0 0 0;">' . get_string('dateistatusbeispiel', 'block_ai_chat')
+            . '</div><ul style="margin: 0; padding-left: 1.1rem;"><li>'
+            . get_string('dateistatuslegende', 'block_ai_chat') . '</li><li>' . get_string('dateistatuslegende2', 'block_ai_chat')
+            . '</li></ul></div>'
+            . '<ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem;">' . $zeilen . '</ul>';
+    }
+
+    // ---- Bilder und Grafiken mit KI lesen (20.11.2026, Wunsch der Nutzerin) ----
+    // Nur mit local_ai_content (ByCS) und einem Modell für den Zweck „Bild zu Text“ (itt) im AI Manager. Lehrkräfte setzen je PDF
+    // ein Häkchen; dann liest die KI jede Seite als Bild (auch Diagramme, Scans, Handschrift) – kostet je Seite eine Anfrage.
+    // Ohne Häkchen wie bisher nur die Textebene (kostenlos). Bilddateien liest immer die KI.
+
+    /** Ist eine Datei ein Bild (png, jpg, …)? */
+    public static function ist_bild(string $name): bool {
+        return in_array('.' . strtolower(pathinfo($name, PATHINFO_EXTENSION)), self::BILDTYPEN, true);
+    }
+
+    /** Kann die KI hier Bilder lesen? (local_ai_content installiert und Zweck „Bild zu Text“ verfügbar) */
+    public static function bildki_verfuegbar(int $contextid = 0): bool {
+        if (!class_exists('\\local_ai_content\\document_extractor') || !interface_exists('\\local_ai_content\\backend\\ai_backend')) {
+            return false;
+        }
+        try {
+            $backend = \core\di::get(\local_ai_content\backend\ai_backend::class);
+            return $backend->get_unavailability_reason($contextid ?: \context_system::instance()->id) === null;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /** Namen der Dateien eines Bereichs, die die KI lesen soll (Häkchen). */
+    private static function bildki(array $b): array {
+        if ($b[3]['personaid'] > 0) {
+            $wert = (string)get_config('block_ai_chat', 'personabildki_' . $b[3]['personaid']);
+        } else {
+            $ctx = \context::instance_by_id($b[0], IGNORE_MISSING);
+            if ($ctx instanceof \context_block) {
+                global $DB;
+                $cd = $DB->get_field('block_instances', 'configdata', ['id' => $ctx->instanceid]);
+                $config = $cd ? unserialize_object(base64_decode($cd)) : new \stdClass();
+                $wert = (string)($config->bildki ?? '');
+            } else {
+                $wert = (string)get_config('block_ai_chat', 'kursbildki_' . $b[3]['contextid']);
+            }
+        }
+        $namen = json_decode($wert, true);
+        return is_array($namen) ? array_values(array_filter($namen, 'is_string')) : [];
+    }
+
+    /** Häkchen speichern (nur Namen vorhandener PDF-Dateien). */
+    private static function bildki_setzen(array $b, array $namen): void {
+        global $DB;
+        $vorhanden = array_map(fn($d) => $d->get_filename(), self::dateien($b));
+        $namen = array_values(array_unique(array_filter($namen, fn($n) => in_array($n, $vorhanden, true)
+            && strtolower(pathinfo($n, PATHINFO_EXTENSION)) === 'pdf')));
+        sort($namen);
+        $wert = $namen ? json_encode($namen) : '';
+        if ($b[3]['personaid'] > 0) {
+            set_config('personabildki_' . $b[3]['personaid'], $wert === '' ? null : $wert, 'block_ai_chat');
+            return;
+        }
+        $ctx = \context::instance_by_id($b[0], IGNORE_MISSING);
+        if ($ctx instanceof \context_block) {
+            $cd = $DB->get_field('block_instances', 'configdata', ['id' => $ctx->instanceid]);
+            $config = $cd ? unserialize_object(base64_decode($cd)) : new \stdClass();
+            $config->bildki = $wert;
+            $DB->set_field('block_instances', 'configdata', base64_encode(serialize($config)), ['id' => $ctx->instanceid]);
+            return;
+        }
+        set_config('kursbildki_' . $b[3]['contextid'], $wert === '' ? null : $wert, 'block_ai_chat');
+    }
+
+    public static function kurs_bildki(\context_course $kurs): array {
+        return self::bildki(self::bereich($kurs));
+    }
+
+    public static function persona_bildki(int $personaid): array {
+        return self::bildki(self::bereich(null, $personaid));
+    }
+
+    /** Meldung nach dem Speichern: je PDF, wie es gelesen wurde (Wunsch der Nutzerin, 20.11.2026 – sonst unklar, was passiert ist). */
+    public static function lesart_meldung(array $status, array $bildki, array $gekuerzt = []): string {
+        $teile = [];
+        foreach ($status as $name => $anzahl) {
+            if (strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== 'pdf' && !self::ist_bild($name)) {
+                continue;
+            }
+            $ki = self::ist_bild($name) || in_array($name, $bildki, true);
+            if (isset($gekuerzt[$name])) {
+                $teile[] = s($name) . ': ⚠️ ' . get_string($anzahl > 0 ? 'dateigekuerzt' : 'dateiweggelassen', 'block_ai_chat',
+                    (object)['ist' => $anzahl, 'soll' => $gekuerzt[$name], 'max' => self::maxabschnitte()]);
+                continue;
+            }
+            $teile[] = s($name) . ': ' . ($anzahl === 0 ? '⚠️ ' . get_string('dateiohnetext', 'block_ai_chat')
+                : ($ki ? '🤖 ' . get_string('bildkigelesen', 'block_ai_chat') : '📄 ' . get_string('bildkinurtext', 'block_ai_chat'))
+                . ' (' . ($anzahl === 1 ? get_string('dateiabschnitt', 'block_ai_chat')
+                    : get_string('dateiabschnitte', 'block_ai_chat', $anzahl)) . ')');
+        }
+        return $teile ? '<ul style="margin: 4px 0 0 0;"><li>' . implode('</li><li>', $teile) . '</li></ul>' : '';
     }
 
     /** Namen der Dateien ohne lesbaren Text aus einer Status-Liste. */
-    public static function ohne_text(array $status): array {
-        return array_keys(array_filter($status, fn($n) => $n === 0));
+    public static function ohne_text(array $status, array $gekuerzt = []): array {
+        return array_keys(array_filter($status, fn($n, $name) => $n === 0 && !isset($gekuerzt[$name]), ARRAY_FILTER_USE_BOTH));
     }
 
     public static function kurs_links(\context_course $kurs): array {
@@ -303,12 +454,15 @@ class wissen {
         return $draftitemid;
     }
 
-    private static function speichern(array $b, int $draftitemid, array $optionen, ?string $links = null): int {
+    private static function speichern(array $b, int $draftitemid, array $optionen, ?string $links = null, ?array $bildki = null): int {
         $vorher = self::fingerabdruck($b);
         if ($links !== null) {
             self::links_setzen($b, $links);
         }
         file_save_draft_area_files($draftitemid, $b[0], 'block_ai_chat', $b[1], $b[2], $optionen);
+        if ($bildki !== null) {
+            self::bildki_setzen($b, $bildki);
+        }
         return self::fingerabdruck($b) !== $vorher ? self::zerlegen($b) : -1;
     }
 
@@ -318,8 +472,8 @@ class wissen {
     }
 
     /** Speichern und neu zerlegen; gibt die Zahl der Abschnitte zurück (-1 = unverändert). */
-    public static function kurs_speichern(\context_course $kurs, int $draftitemid, ?string $links = null): int {
-        return self::speichern(self::bereich($kurs), $draftitemid, self::kursoptionen(), $links);
+    public static function kurs_speichern(\context_course $kurs, int $draftitemid, ?string $links = null, ?array $bildki = null): int {
+        return self::speichern(self::bereich($kurs), $draftitemid, self::kursoptionen(), $links, $bildki);
     }
 
     public static function kurs_dateinamen(\context_course $kurs): array {
@@ -335,8 +489,8 @@ class wissen {
         return self::entwurf(self::bereich(null, $personaid), self::personaoptionen());
     }
 
-    public static function persona_speichern(int $personaid, int $draftitemid, ?string $links = null): int {
-        return self::speichern(self::bereich(null, $personaid), $draftitemid, self::personaoptionen(), $links);
+    public static function persona_speichern(int $personaid, int $draftitemid, ?string $links = null, ?array $bildki = null): int {
+        return self::speichern(self::bereich(null, $personaid), $draftitemid, self::personaoptionen(), $links, $bildki);
     }
 
     public static function persona_zerlegen(int $personaid): int {
@@ -376,9 +530,12 @@ class wissen {
         \core_php_time_limit::raise(600);
         $DB->delete_records(self::TABELLE, $b[3]);
         $abschnitte = [];
+        $mitki = self::bildki($b);
+        $kicontext = $b[3]['contextid'] ?: \context_system::instance()->id;
         foreach (self::dateien($b) as $datei) {
             $nr = 0;
-            foreach (self::abschnitte(self::text($datei)) as $text) {
+            $ki = in_array($datei->get_filename(), $mitki, true) || self::ist_bild($datei->get_filename());
+            foreach (self::abschnitte(self::text($datei, $ki ? $kicontext : 0)) as $text) {
                 $abschnitte[] = (object)($b[3] + ['filename' => $datei->get_filename(), 'chunkno' => $nr++,
                     'content' => $text, 'embedding' => null, 'model' => '', 'timecreated' => time()]);
             }
@@ -396,13 +553,24 @@ class wissen {
                     'timecreated' => time()]);
             }
         }
+        $gekuerzt = [];
+        if (count($abschnitte) > self::maxabschnitte()) {
+            debugging('block_ai_chat Wissensdateien: nur die ersten ' . self::maxabschnitte() . ' von ' . count($abschnitte)
+                . ' Abschnitten werden verwendet.', DEBUG_DEVELOPER);
+            // Merken, welche Dateien (oder Webseiten) dadurch gekürzt wurden oder ganz wegfallen – für eine ehrliche Anzeige.
+            foreach (array_slice($abschnitte, self::maxabschnitte()) as $weg) {
+                $gekuerzt[$weg->filename] = 0;
+            }
+            foreach ($abschnitte as $a) {
+                if (isset($gekuerzt[$a->filename])) {
+                    $gekuerzt[$a->filename]++;
+                }
+            }
+            $abschnitte = array_slice($abschnitte, 0, self::maxabschnitte());
+        }
+        set_config('gekuerzt_' . self::bereichsname($b), $gekuerzt ? json_encode($gekuerzt) : null, 'block_ai_chat');
         if (!$abschnitte) {
             return 0;
-        }
-        if (count($abschnitte) > self::MAXABSCHNITTE) {
-            debugging('block_ai_chat Wissensdateien: nur die ersten ' . self::MAXABSCHNITTE . ' von ' . count($abschnitte)
-                . ' Abschnitten werden verwendet.', DEBUG_DEVELOPER);
-            $abschnitte = array_slice($abschnitte, 0, self::MAXABSCHNITTE);
         }
         // Embeddings in Paketen zu 16 Abschnitten; schlägt das fehl, bleibt die Suche per Wortvergleich.
         foreach (array_chunk(array_keys($abschnitte), 16) as $paket) {
@@ -420,9 +588,39 @@ class wissen {
         return count($abschnitte);
     }
 
-    /** Text einer Datei je nach Typ. */
-    public static function text(\stored_file $datei): string {
+    /**
+     * Text einer Datei je nach Typ.
+     *
+     * @param \stored_file $datei
+     * @param int $kicontext > 0: PDF bzw. Bild von der KI lesen lassen (local_ai_content, jede Seite als Bild, Zweck „Bild zu Text“,
+     *                       Anfragen im Namen der Person, die speichert). Klappt das nicht, wie bisher nur die Textebene.
+     */
+    public static function text(\stored_file $datei, int $kicontext = 0): string {
         $endung = strtolower(pathinfo($datei->get_filename(), PATHINFO_EXTENSION));
+        if ($kicontext > 0 && ($endung === 'pdf' || self::ist_bild($datei->get_filename())) && self::bildki_verfuegbar($kicontext)) {
+            global $USER;
+            try {
+                $leser = new \local_ai_content\document_extractor();
+                $leser->set_log_outputmode(\local_ai_content\document_extractor::LOG_OUTPUT_NONE);
+                // 5. Parameter (PDF-Modus) gibt es erst im Vorschlag an ByCS; ältere Fassungen lesen PDFs ohnehin per KI.
+                $text = $leser->extract_text_from_file($datei, $kicontext, !empty($USER->id) ? (int)$USER->id : null,
+                    'block_ai_chat', 'vision');
+                // Kleine Modelle verpacken die Antwort manchmal in Code-Zäune oder HTML – nur den reinen Text behalten.
+                $text = trim(preg_replace('/^```[a-z]*\s*$/mi', '', $text));
+                if (preg_match('/<(p|div|h[1-6]|br|li|body|html)\b/i', $text)) {
+                    $text = html_to_text($text, 0, false);
+                }
+                if (trim($text) !== '') {
+                    return $text;
+                }
+            } catch (\Throwable $e) {
+                debugging('block_ai_chat Wissensdateien: KI konnte ' . $datei->get_filename() . ' nicht lesen (' . $e->getMessage() . ')',
+                    DEBUG_DEVELOPER);
+            }
+        }
+        if (self::ist_bild($datei->get_filename())) {
+            return '';
+        }
         $inhalt = $datei->get_content();
         switch ($endung) {
             case 'ipynb':

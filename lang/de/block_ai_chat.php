@@ -36,7 +36,7 @@ $string['startvorschlaege'] = 'Startvorschläge im leeren Chat';
 $string['startvorschlaegedesc'] = 'Ein Vorschlag pro Zeile. Ein Klick schreibt ihn ins Eingabefeld (zum Ergänzen); „…“ wird markiert. Leer = keine.';
 $string['folgevorschlaege'] = 'Knöpfe nach einer Antwort (gestufte Hilfe)';
 $string['folgevorschlaegedesc'] = 'Eine Zeile pro Knopf: „Beschriftung | Text, der gesendet wird“. Leer = keine.';
-$string['kurswissenerzeugen'] = 'Aus den Kursinhalten erzeugen';
+$string['kurswissenerzeugen'] = 'Automatisch erzeugen';
 $string['kurswissenerzeugeninfo'] = 'Stellt die Wissensdateien aus den Inhalten des Kurses zusammen: Textfelder, Seiten, Aufgabenbeschreibungen, Unilabel, Lektionen und Bücher sowie Dateien darin (Notebooks, PDF, Word, Text). Im nächsten Schritt siehst du alle gefundenen Inhalte und wählst aus. Tests, Umfragen und H5P bleiben immer draußen.';
 $string['kurswissenerzeugenfrage'] = 'Die bisherigen Wissensdateien dieses Kurses werden ersetzt. Fortfahren?';
 $string['kurswissenerzeugt'] = '{$a} Wissensdateien aus den Kursinhalten erzeugt. Die Abschnitte werden im Hintergrund vorbereitet (einige Minuten).';
@@ -96,3 +96,6 @@ $string['dateigekuerzt'] = 'gekürzt: nur {$a->ist} von {$a->soll} Abschnitten a
 $string['dateiweggelassen'] = 'nicht aufgenommen: Die Höchstzahl von {$a->max} Abschnitten je Kurs bzw. Persona ist schon durch die Dateien darüber erreicht. Entferne andere Dateien oder bitte die Administration, die Grenze zu erhöhen.';
 $string['wissenmaxabschnitte'] = 'Höchstzahl der Abschnitte je Kurs bzw. Persona';
 $string['wissenmaxabschnittedesc'] = 'Schutz vor Überlastung: So viele Abschnitte (je ca. 1.200 Zeichen) aus allen Dateien und Webseiten eines Kurses bzw. einer Persona werden höchstens für die Suche vorbereitet. Was darüber hinausgeht, wird nicht aufgenommen und in der Dateiliste als „gekürzt“ bzw. „nicht aufgenommen“ angezeigt. Standard 1000 (mindestens 50).';
+$string['kurswissenerzeugentitel'] = 'Wissensdateien automatisch aus den Kursinhalten erzeugen';
+$string['kurswissenerzeugenersetzt'] = 'Achtung: Das ersetzt die Wissensdateien unten.';
+$string['kurswissenerzeugenfrage2'] = 'Du hast noch keine Dateien zum Hochladen? Lass sie automatisch erzeugen.';

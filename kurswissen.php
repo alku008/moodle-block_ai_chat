@@ -139,20 +139,27 @@ echo html_writer::div(get_string('kurswisseninfo', 'block_ai_chat'),
 if (wissen::kursmaxdateien() === 0) {
     echo $OUTPUT->notification(get_string('kurswissenaus', 'block_ai_chat'), 'warning');
 } else {
+    // „Automatisch erzeugen“ direkt unter dem Hinweis, vor dem Hochladen (Wunsch der Nutzerin, 20.11.2026: die meisten möchten die
+    // Dateien automatisch erzeugen lassen). Ersetzt die Dateien unten – vorher kommen Vorschau mit Häkchen und Rückfrage.
+    $erzeugen = new moodle_url($url, ['vorschau' => 1]);
+    echo html_writer::div(
+        html_writer::tag('div', '✨ ' . get_string('kurswissenerzeugentitel', 'block_ai_chat'),
+            ['style' => 'font-weight: bold; font-size: 1.05rem; margin-bottom: 2px;'])
+        . html_writer::div(get_string('kurswissenerzeugenfrage2', 'block_ai_chat'), '', ['style' => 'margin-bottom: 4px;'])
+        . html_writer::div(get_string('kurswissenerzeugeninfo', 'block_ai_chat')
+            . (wissen::kurs_dateinamen($kurs) ? ' <strong>' . get_string('kurswissenerzeugenersetzt', 'block_ai_chat') . '</strong>' : ''),
+            '', ['style' => 'font-size: 0.9rem; color: #5b6670; margin-bottom: 8px;'])
+        . html_writer::link($erzeugen, '✨ ' . get_string('kurswissenerzeugen', 'block_ai_chat'), ['class' => 'btn btn-primary',
+            'style' => 'background-color: var(--format-tiles-colour, #0f6cbf); border-color: var(--format-tiles-colour, #0f6cbf); color: #fff;']),
+        '', ['style' => 'margin-bottom: 16px; padding: 12px 14px; border: 1px solid #d5dbe3; border-radius: 8px; background: #f8fafd;']);
+    echo '<hr style="border: 0; border-top: 1px solid #a9b6c6; opacity: 1; margin: 0 0 16px 0;">';
     $form->display();
     if (wissen::bildki_verfuegbar($kurs->id)) {
         // Beim Hochladen eines PDFs fragen, ob die KI Bilder und Scans in Text umwandeln soll.
         $PAGE->requires->js_call_amd('block_ai_chat/bildki_abfrage', 'init', ['dateien']);
     }
-    echo html_writer::div(html_writer::link($zurueck, '← ' . get_string('backtocourse', 'block_ai_chat')), '',
-        ['style' => 'margin-top: 8px;']);
-    // Erzeugen aus den Kursinhalten (mit Rückfrage, weil die Dateien oben ersetzt werden).
-    $erzeugen = new moodle_url($url, ['vorschau' => 1]);
-    echo html_writer::div(
-        html_writer::tag('div', '✨ ' . get_string('kurswissenerzeugen', 'block_ai_chat'), ['style' => 'font-weight: bold; margin-bottom: 4px;'])
-        . html_writer::div(get_string('kurswissenerzeugeninfo', 'block_ai_chat'), '', ['style' => 'font-size: 0.9rem; color: #5b6670; margin-bottom: 8px;'])
-        . html_writer::link($erzeugen, '✨ ' . get_string('kurswissenerzeugen', 'block_ai_chat'), ['class' => 'btn btn-primary',
-            'style' => 'background-color: var(--format-tiles-colour, #0f6cbf); border-color: var(--format-tiles-colour, #0f6cbf); color: #fff;']),
-        '', ['style' => 'margin-top: 24px; padding: 12px 14px; border: 1px solid #d5dbe3; border-radius: 8px; background: #f8fafd;']);
 }
+echo html_writer::div(html_writer::link($zurueck, '← ' . get_string('backtocourse', 'block_ai_chat'), ['class' => 'btn btn-lg',
+    'style' => 'border: 2px solid var(--format-tiles-colour, #0f6cbf); color: var(--format-tiles-colour, #0f6cbf); background: #fff; '
+        . 'font-weight: 600;']), '', ['style' => 'margin: 28px 0 8px 0;']);
 echo $OUTPUT->footer();

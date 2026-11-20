@@ -161,7 +161,7 @@ $string['startvorschlaege'] = 'Starter suggestions in an empty chat';
 $string['startvorschlaegedesc'] = 'One suggestion per line. A click writes it into the input field; "…" is selected. Empty = none.';
 $string['folgevorschlaege'] = 'Buttons after an answer (stepwise help)';
 $string['folgevorschlaegedesc'] = 'One line per button: "Label | text that is sent". Empty = none.';
-$string['kurswissenerzeugen'] = 'Create from course contents';
+$string['kurswissenerzeugen'] = 'Create automatically';
 $string['kurswissenerzeugeninfo'] = 'Builds the knowledge files from the course contents: text areas, pages, assignment descriptions, Unilabel, lessons and books plus files in them (notebooks, PDF, Word, text). In the next step you see everything that was found and choose. Quizzes, surveys and H5P are always left out.';
 $string['kurswissenerzeugenfrage'] = 'The current knowledge files of this course will be replaced. Continue?';
 $string['kurswissenerzeugt'] = '{$a} knowledge files created from the course contents. Sections are prepared in the background (a few minutes).';
@@ -221,3 +221,6 @@ $string['dateigekuerzt'] = 'shortened: only {$a->ist} of {$a->soll} sections inc
 $string['dateiweggelassen'] = 'not included: the maximum of {$a->max} sections per course or persona is already reached by the files above. Remove other files or ask the administration to raise the limit.';
 $string['wissenmaxabschnitte'] = 'Maximum number of sections per course or persona';
 $string['wissenmaxabschnittedesc'] = 'Protection against overload: at most this many sections (about 1,200 characters each) from all files and web pages of a course or persona are prepared for the search. Anything beyond is not included and shown as "shortened" or "not included" in the file list. Default 1000 (minimum 50).';
+$string['kurswissenerzeugentitel'] = 'Create knowledge files automatically from the course content';
+$string['kurswissenerzeugenersetzt'] = 'Note: this replaces the knowledge files below.';
+$string['kurswissenerzeugenfrage2'] = 'No files to upload yet? Let them be created automatically.';
